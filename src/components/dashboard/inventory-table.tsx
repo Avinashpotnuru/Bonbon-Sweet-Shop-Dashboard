@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -45,19 +45,13 @@ import {
   AdjustStockDialog,
   type AdjustFormValues,
 } from "@/components/dashboard/inventory-adjust-dialog";
+import { formatMoneyExact } from "@/lib/format";
 
 type SortField = "name" | "sku" | "category" | "price" | "stock";
 type SortDirection = "asc" | "desc";
 type LoadState = "loading" | "success" | "error";
 
 const PAGE_SIZE = 8;
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
 
 function levelVariant(level: StockLevel) {
   switch (level) {
@@ -74,13 +68,13 @@ function StockCell({ stock }: { stock: number }) {
   const level = stock <= 0 ? "out" : stock <= 10 ? "low" : "in";
   const tone =
     level === "out"
-      ? "text-destructive"
+      ? "text-red-700 dark:text-red-400"
       : level === "low"
-        ? "text-amber-600"
-        : "text-foreground";
+        ? "text-amber-700 dark:text-amber-300"
+        : "text-green-700 dark:text-green-400";
   return (
     <span className={`font-medium tabular-nums ${tone}`}>
-      {stock} {level === "low" && <span className="text-xs text-amber-600">(low)</span>}
+      {stock} {level === "low" && <span className="text-xs text-amber-700 dark:text-amber-300">(low)</span>}
     </span>
   );
 }
@@ -129,25 +123,25 @@ function summaryCards(summary: InventorySummary) {
       value: String(summary.productCount - summary.lowCount - summary.outCount),
       sub: "Healthy levels",
       icon: PackagePlus,
-      tone: "text-emerald-600 bg-emerald-600/10",
+      tone: "text-green-600 bg-green-600/10 dark:text-green-400 dark:bg-green-500/15",
     },
     {
       label: "Low stock",
       value: String(summary.lowCount),
       sub: "Need replenishment",
       icon: TriangleAlert,
-      tone: "text-amber-600 bg-amber-600/10",
+      tone: "text-amber-700 bg-amber-500/10 dark:text-amber-300 dark:bg-amber-500/15",
     },
     {
       label: "Out of stock",
       value: String(summary.outCount),
       sub: "Unavailable",
       icon: PackageX,
-      tone: "text-destructive bg-destructive/10",
+      tone: "text-red-700 bg-red-500/10 dark:text-red-400 dark:bg-red-500/15",
     },
     {
       label: "Inventory value",
-      value: formatCurrency(summary.totalValue),
+      value: formatMoneyExact(summary.totalValue),
       sub: "At retail price",
       icon: Wallet,
       tone: "text-primary bg-primary/10",
@@ -177,13 +171,13 @@ export function InventoryTable() {
   });
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustingItem, setAdjustingItem] = useState<InventoryItem | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(() => {
+  useEffect(() => {
+    const controller = new AbortController();
     const params = new URLSearchParams({
       search,
       level: levelFilter,
@@ -193,7 +187,7 @@ export function InventoryTable() {
       pageSize: String(PAGE_SIZE),
       movements: "true",
     });
-    fetch(`/api/inventory?${params}`)
+    fetch(`/api/inventory?${params}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error();
         return r.json();
@@ -206,26 +200,14 @@ export function InventoryTable() {
         setMovements(data.movements ?? []);
         setLoadState("success");
       })
-      .catch(() => {
-        setLoadState("error");
-        setItems([]);
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          setLoadState("error");
+          setItems([]);
+        }
       });
-  }, [search, levelFilter, sort, page]);
-
-  useEffect(() => {
-    load();
-  }, [load, refreshKey]);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      setPage(1);
-      load();
-    }, 300);
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [search, load]);
+    return () => controller.abort();
+  }, [search, levelFilter, sort, page, refreshKey]);
 
   const safePage = Math.min(page, totalPages);
   const hasActiveFilters = search.trim() !== "" || levelFilter !== "all";
@@ -293,7 +275,10 @@ export function InventoryTable() {
           <Input
             placeholder="Search by product or SKU..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
             aria-label="Search inventory by product or SKU"
           />
@@ -351,8 +336,8 @@ export function InventoryTable() {
               <div
                 className={`flex size-8 shrink-0 items-center justify-center rounded-md ${
                   m.type === "in"
-                    ? "bg-emerald-600/10 text-emerald-600"
-                    : "bg-destructive/10 text-destructive"
+                    ? "bg-green-600/10 text-green-600 dark:bg-green-500/15 dark:text-green-400"
+                    : "bg-red-500/10 text-red-700 dark:bg-red-500/15 dark:text-red-400"
                 }`}
               >
                 {m.type === "in" ? (
@@ -441,7 +426,7 @@ export function InventoryTable() {
   } else if (items?.length === 0) {
     tableContent = (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-16 text-center">
-        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
           <Boxes className="size-6" aria-hidden="true" />
         </div>
         <h3 className="font-medium">
@@ -511,7 +496,7 @@ export function InventoryTable() {
                     <Badge variant="outline">{item.category}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
-                    {formatCurrency(item.price)}
+                    {formatMoneyExact(item.price)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-2">

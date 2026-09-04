@@ -1,14 +1,10 @@
 import { InventoryTable } from "@/components/dashboard/inventory-table";
+import { PageBreadcrumb } from "@/components/dashboard/page-breadcrumb";
 
 export default function InventoryPage() {
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
-        <p className="text-muted-foreground">
-          Monitor and adjust your product stock levels.
-        </p>
-      </div>
+      <PageBreadcrumb title="Inventory" />
       <InventoryTable />
     </div>
   );

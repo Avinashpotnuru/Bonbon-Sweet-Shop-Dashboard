@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import { connectDb } from "@/lib/mongodb";
 import { customerUpdateSchema } from "@/lib/customer-schemas";
 import { deleteCustomer, updateCustomer } from "@/lib/customers-repo";
@@ -9,6 +10,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["customers.update"]);
     await connectDb();
     const { id } = await params;
     const body = await request.json();
@@ -25,6 +28,8 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["customers.delete"]);
     await connectDb();
     const { id } = await params;
     const deleted = await deleteCustomer(id);

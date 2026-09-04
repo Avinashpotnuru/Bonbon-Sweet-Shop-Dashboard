@@ -4,9 +4,13 @@ import { handleApiError } from "@/lib/api-helpers";
 import { connectDb } from "@/lib/mongodb";
 import { expenseCreateSchema, expenseListSchema } from "@/lib/expense-schemas";
 import { createExpense, listExpenses } from "@/lib/expenses-repo";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["expenses.view"]);
+
     await connectDb();
     const url = new URL(request.url);
     const parsed = expenseListSchema.parse({
@@ -26,6 +30,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["expenses.manage"]);
+
     await connectDb();
     const body = await request.json();
     const data = expenseCreateSchema.parse(body);

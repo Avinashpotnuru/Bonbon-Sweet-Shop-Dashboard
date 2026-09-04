@@ -129,7 +129,7 @@ export function ProductForm({
           noValidate
         >
           <Field>
-            <FieldLabel htmlFor="name">Name</FieldLabel>
+            <FieldLabel htmlFor="name" required>Name</FieldLabel>
             <FieldContent>
               <Input
                 id="name"
@@ -145,7 +145,7 @@ export function ProductForm({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="category">Category</FieldLabel>
+            <FieldLabel htmlFor="category" required>Category</FieldLabel>
             <FieldContent>
               <Controller
                 control={control}
@@ -193,7 +193,7 @@ export function ProductForm({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="price">Price (USD)</FieldLabel>
+              <FieldLabel htmlFor="price" required>Price (USD)</FieldLabel>
               <FieldContent>
                 <Input
                   id="price"
@@ -213,7 +213,7 @@ export function ProductForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="stock">Stock</FieldLabel>
+              <FieldLabel htmlFor="stock" required>Stock</FieldLabel>
               <FieldContent>
                 <Input
                   id="stock"
@@ -234,7 +234,7 @@ export function ProductForm({
           </div>
 
           <Field>
-            <FieldLabel htmlFor="status">Status</FieldLabel>
+            <FieldLabel htmlFor="status" required>Status</FieldLabel>
             <FieldContent>
               <Controller
                 control={control}

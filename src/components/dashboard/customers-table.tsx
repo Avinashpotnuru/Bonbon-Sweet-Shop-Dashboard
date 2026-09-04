@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  CakeSlice,
   ChevronDown,
   ChevronUp,
   MoreHorizontal,
@@ -12,7 +13,6 @@ import {
   Search,
   Trash2,
   TriangleAlert,
-  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,6 +58,7 @@ import {
   CustomerForm,
   type CustomerFormValues,
 } from "@/components/dashboard/customer-form";
+import { formatMoneyExact } from "@/lib/format";
 
 type SortField = "name" | "email" | "status" | "totalSpent" | "ordersCount" | "joinedAt";
 type SortDirection = "asc" | "desc";
@@ -65,21 +66,14 @@ type LoadState = "loading" | "success" | "error";
 
 const PAGE_SIZE = 8;
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
-
-function statusVariant(status: CustomerStatus) {
+function statusBadgeClasses(status: CustomerStatus) {
   switch (status) {
     case "VIP":
-      return "default" as const;
+      return "bg-rose-500/15 text-rose-700 border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-800";
     case "Active":
-      return "secondary" as const;
+      return "bg-green-500/15 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-800";
     case "Inactive":
-      return "outline" as const;
+      return "bg-muted text-muted-foreground border-border dark:bg-white/5 dark:text-muted-foreground dark:border-white/10";
   }
 }
 
@@ -126,14 +120,14 @@ export function CustomersTable() {
   });
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>(undefined);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | undefined>(undefined);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(() => {
+  useEffect(() => {
+    const controller = new AbortController();
     const params = new URLSearchParams({
       search,
       status: statusFilter,
@@ -142,7 +136,7 @@ export function CustomersTable() {
       page: String(page),
       pageSize: String(PAGE_SIZE),
     });
-    fetch(`/api/customers?${params}`)
+    fetch(`/api/customers?${params}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error();
         return r.json();
@@ -153,26 +147,14 @@ export function CustomersTable() {
         setTotalPages(data.totalPages);
         setLoadState("success");
       })
-      .catch(() => {
-        setLoadState("error");
-        setCustomers([]);
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          setLoadState("error");
+          setCustomers([]);
+        }
       });
-  }, [search, statusFilter, sort, page]);
-
-  useEffect(() => {
-    load();
-  }, [load, refreshKey]);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      setPage(1);
-      load();
-    }, 300);
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [search, load]);
+    return () => controller.abort();
+  }, [search, statusFilter, sort, page, refreshKey]);
 
   const safePage = Math.min(page, totalPages);
   const hasActiveFilters = search.trim() !== "" || statusFilter !== "all";
@@ -268,7 +250,10 @@ export function CustomersTable() {
           <Input
             placeholder="Search customers..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
             aria-label="Search customers by name, email, or city"
           />
@@ -358,7 +343,7 @@ export function CustomersTable() {
     const isFiltered = hasActiveFilters;
     content = (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-16 text-center">
-        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
           <PackageX className="size-6" aria-hidden="true" />
         </div>
         <h3 className="font-medium">
@@ -419,8 +404,8 @@ export function CustomersTable() {
                 <TableRow key={customer.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <UserRound className="size-4" aria-hidden="true" />
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                        <CakeSlice className="size-4" aria-hidden="true" />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium">{customer.name}</span>
@@ -432,10 +417,10 @@ export function CustomersTable() {
                     {customer.city || "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(customer.status)}>{customer.status}</Badge>
+                    <Badge variant="outline" className={statusBadgeClasses(customer.status)}>{customer.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
-                    {formatCurrency(customer.totalSpent)}
+                    {formatMoneyExact(customer.totalSpent)}
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-right tabular-nums">
                     {customer.ordersCount}

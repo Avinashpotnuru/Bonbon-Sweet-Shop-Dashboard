@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 export function handleApiError(error: unknown) {
+  if (error instanceof Error && error.message === "UNAUTHORIZED") {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  if (error instanceof Error && error.message === "FORBIDDEN") {
+    return NextResponse.json({ error: "You do not have permission to do this." }, { status: 403 });
+  }
+
   if (error instanceof ZodError) {
     return NextResponse.json(
       {

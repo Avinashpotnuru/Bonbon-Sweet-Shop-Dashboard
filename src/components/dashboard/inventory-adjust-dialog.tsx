@@ -101,7 +101,7 @@ export function AdjustStockDialog({
 
   return (
     <Dialog open={open} onOpenChange={onDialogOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md bg-card">
         <DialogHeader>
           <DialogTitle>Adjust stock</DialogTitle>
           <DialogDescription>
@@ -111,12 +111,21 @@ export function AdjustStockDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
-          <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
+          <div className="flex items-center justify-between rounded-lg border bg-amber-50/60 px-4 py-3 dark:bg-amber-500/10">
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">Current stock</span>
               <span className="text-lg font-semibold tabular-nums">{item?.stock ?? 0}</span>
             </div>
-            <Badge variant={preview.out ? "destructive" : "secondary"}>
+            <Badge
+              variant={preview.out ? "destructive" : "secondary"}
+              className={
+                preview.out
+                  ? ""
+                  : item?.level === "low"
+                    ? "bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+                    : "bg-green-500/15 text-green-700 dark:bg-green-500/20 dark:text-green-400"
+              }
+            >
               {item?.level}
             </Badge>
             <div className="flex flex-col items-end">
@@ -132,7 +141,7 @@ export function AdjustStockDialog({
           )}
 
           <Field>
-            <FieldLabel htmlFor="type">Type</FieldLabel>
+            <FieldLabel htmlFor="type" required>Type</FieldLabel>
             <FieldContent>
               <Controller
                 control={control}
@@ -166,7 +175,7 @@ export function AdjustStockDialog({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="change">Quantity</FieldLabel>
+            <FieldLabel htmlFor="change" required>Quantity</FieldLabel>
             <FieldContent>
               <Input
                 id="change"

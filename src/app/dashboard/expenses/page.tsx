@@ -1,14 +1,13 @@
 import { ExpensesTable } from "@/components/dashboard/expenses-table";
+import { requirePagePermission } from "@/lib/auth";
+import { PageBreadcrumb } from "@/components/dashboard/page-breadcrumb";
 
-export default function ExpensesPage() {
+export default async function ExpensesPage() {
+  await requirePagePermission(["expenses.view"]);
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
-        <p className="text-muted-foreground">
-          Track your business costs and spending.
-        </p>
-      </div>
+      <PageBreadcrumb title="Expenses" />
       <ExpensesTable />
     </div>
   );

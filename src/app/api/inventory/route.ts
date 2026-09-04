@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth } from "@/lib/auth";
 import { connectDb } from "@/lib/mongodb";
 import { inventoryListSchema } from "@/lib/inventory-schemas";
 import { listInventory, listRecentMovements } from "@/lib/inventory-repo";
 
 export async function GET(request: Request) {
   try {
+    await requireApiAuth();
     await connectDb();
     const url = new URL(request.url);
     const parsed = inventoryListSchema.parse({

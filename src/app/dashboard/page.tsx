@@ -1,6 +1,9 @@
 import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
+import { requireSession } from "@/lib/auth";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await requireSession();
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -9,7 +12,7 @@ export default function DashboardPage() {
           A live overview of your store&apos;s performance.
         </p>
       </div>
-      <DashboardOverview />
+      <DashboardOverview role={session.role} />
     </div>
   );
 }

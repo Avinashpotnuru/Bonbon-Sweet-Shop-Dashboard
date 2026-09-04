@@ -106,7 +106,7 @@ export function OrderForm({
           noValidate
         >
           <Field>
-            <FieldLabel htmlFor="customerName">Customer</FieldLabel>
+            <FieldLabel htmlFor="customerName" required>Customer</FieldLabel>
             <FieldContent>
               <Input
                 id="customerName"
@@ -123,7 +123,7 @@ export function OrderForm({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="itemCount">Items</FieldLabel>
+              <FieldLabel htmlFor="itemCount" required>Items</FieldLabel>
               <FieldContent>
                 <Input
                   id="itemCount"
@@ -141,7 +141,7 @@ export function OrderForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="total">Total</FieldLabel>
+              <FieldLabel htmlFor="total" required>Total</FieldLabel>
               <FieldContent>
                 <Input
                   id="total"
@@ -162,7 +162,7 @@ export function OrderForm({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="status">Status</FieldLabel>
+              <FieldLabel htmlFor="status" required>Status</FieldLabel>
               <FieldContent>
                 <Controller
                   control={control}
@@ -189,7 +189,7 @@ export function OrderForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="placedAt">Placed on</FieldLabel>
+              <FieldLabel htmlFor="placedAt" required>Placed on</FieldLabel>
               <FieldContent>
                 <Input
                   id="placedAt"

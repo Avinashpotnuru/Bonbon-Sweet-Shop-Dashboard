@@ -4,11 +4,15 @@ import { handleApiError } from "@/lib/api-helpers";
 import { connectDb } from "@/lib/mongodb";
 import { expenseUpdateSchema } from "@/lib/expense-schemas";
 import { deleteExpense, updateExpense } from "@/lib/expenses-repo";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["expenses.manage"]);
+
     await connectDb();
     const { id } = await params;
     const body = await request.json();
@@ -25,6 +29,9 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["expenses.manage"]);
+
     await connectDb();
     const { id } = await params;
     const deleted = await deleteExpense(id);

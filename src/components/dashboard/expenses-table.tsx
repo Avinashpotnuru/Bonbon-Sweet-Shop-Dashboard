@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import type { Expense, ExpenseCategory } from "@/lib/expenses-types";
 import { ExpenseForm, type ExpenseFormValues } from "@/components/dashboard/expense-form";
+import { formatDate, formatMoneyExact } from "@/lib/format";
 
 type SortField = "description" | "category" | "amount" | "date";
 type SortDirection = "asc" | "desc";
@@ -62,34 +63,19 @@ type LoadState = "loading" | "success" | "error";
 
 const PAGE_SIZE = 8;
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function categoryVariant(category: ExpenseCategory) {
   switch (category) {
     case "Rent":
     case "Salaries":
-      return "default" as const;
+      return "default" as const; // primary → amber-700
     case "Utilities":
     case "Equipment":
-      return "secondary" as const;
+      return "secondary" as const; // green-700
     case "Ingredients":
     case "Packaging":
-      return "outline" as const;
+      return "outline" as const; // lighter amber
     default:
-      return "outline" as const;
+      return "outline" as const; // Marketing, Other
   }
 }
 
@@ -137,14 +123,14 @@ export function ExpensesTable() {
   });
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>(undefined);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | undefined>(undefined);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(() => {
+  useEffect(() => {
+    const controller = new AbortController();
     const params = new URLSearchParams({
       search,
       category: categoryFilter,
@@ -153,7 +139,7 @@ export function ExpensesTable() {
       page: String(page),
       pageSize: String(PAGE_SIZE),
     });
-    fetch(`/api/expenses?${params}`)
+    fetch(`/api/expenses?${params}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error();
         return r.json();
@@ -165,26 +151,14 @@ export function ExpensesTable() {
         setTotalPages(data.totalPages);
         setLoadState("success");
       })
-      .catch(() => {
-        setLoadState("error");
-        setExpenses([]);
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          setLoadState("error");
+          setExpenses([]);
+        }
       });
-  }, [search, categoryFilter, sort, page]);
-
-  useEffect(() => {
-    load();
-  }, [load, refreshKey]);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      setPage(1);
-      load();
-    }, 300);
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [search, load]);
+    return () => controller.abort();
+  }, [search, categoryFilter, sort, page, refreshKey]);
 
   const safePage = Math.min(page, totalPages);
   const hasActiveFilters = search.trim() !== "" || categoryFilter !== "all";
@@ -280,7 +254,10 @@ export function ExpensesTable() {
           <Input
             placeholder="Search expenses..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
             aria-label="Search expenses by description or category"
           />
@@ -370,7 +347,7 @@ export function ExpensesTable() {
     const isFiltered = hasActiveFilters;
     content = (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-16 text-center">
-        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
           <ReceiptText className="size-6" aria-hidden="true" />
         </div>
         <h3 className="font-medium">
@@ -404,14 +381,14 @@ export function ExpensesTable() {
   } else {
     content = (
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
-          <div className="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className="flex items-center gap-3 rounded-lg border bg-amber-50 px-4 py-3 dark:bg-amber-500/10">
+          <div className="flex size-9 items-center justify-center rounded-md bg-amber-500/10 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             <Wallet className="size-5" aria-hidden="true" />
           </div>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Total expenses</span>
             <span className="text-lg font-semibold tabular-nums">
-              {formatCurrency(totalSpend)}
+              {formatMoneyExact(totalSpend)}
             </span>
           </div>
           <span className="ml-auto text-sm text-muted-foreground">
@@ -447,10 +424,19 @@ export function ExpensesTable() {
                     <span className="line-clamp-1 font-medium">{expense.description}</span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={categoryVariant(expense.category)}>{expense.category}</Badge>
+                    <Badge
+                      variant={categoryVariant(expense.category)}
+                      className={
+                        expense.category === "Rent" || expense.category === "Salaries"
+                          ? "bg-amber-500/15 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300"
+                          : expense.category === "Utilities" || expense.category === "Equipment"
+                            ? "bg-green-500/15 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-400"
+                            : ""
+                      }
+                    >{expense.category}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums text-destructive">
-                    {formatCurrency(expense.amount)}
+                    {formatMoneyExact(expense.amount)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(expense.date)}

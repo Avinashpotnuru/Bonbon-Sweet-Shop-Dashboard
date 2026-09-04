@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import {
   categoryExists,
 } from "@/lib/categories-repo";
@@ -31,6 +32,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["products.create"]);
     await connectDb();
     const body = await request.json();
     const data = productCreateSchema.parse(body);

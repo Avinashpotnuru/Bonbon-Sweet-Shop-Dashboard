@@ -116,7 +116,7 @@ export function CustomerForm({
           noValidate
         >
           <Field>
-            <FieldLabel htmlFor="name">Name</FieldLabel>
+            <FieldLabel htmlFor="name" required>Name</FieldLabel>
             <FieldContent>
               <Input
                 id="name"
@@ -132,7 +132,7 @@ export function CustomerForm({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email" required>Email</FieldLabel>
             <FieldContent>
               <Input
                 id="email"
@@ -186,7 +186,7 @@ export function CustomerForm({
           </div>
 
           <Field>
-            <FieldLabel htmlFor="status">Status</FieldLabel>
+            <FieldLabel htmlFor="status" required>Status</FieldLabel>
             <FieldContent>
               <Controller
                 control={control}

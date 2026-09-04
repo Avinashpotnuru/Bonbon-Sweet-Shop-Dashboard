@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FolderOpen,
   MoreHorizontal,
@@ -57,7 +57,6 @@ export function CategoriesTable() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(
@@ -68,8 +67,11 @@ export function CategoriesTable() {
   );
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(() => {
-    fetch(`/api/categories?search=${encodeURIComponent(search)}`)
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/categories?search=${encodeURIComponent(search)}`, {
+      signal: controller.signal,
+    })
       .then((r) => {
         if (!r.ok) throw new Error();
         return r.json();
@@ -78,25 +80,14 @@ export function CategoriesTable() {
         setCategories(data);
         setLoadState("success");
       })
-      .catch(() => {
-        setLoadState("error");
-        setCategories([]);
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          setLoadState("error");
+          setCategories([]);
+        }
       });
-  }, [search]);
-
-  useEffect(() => {
-    load();
-  }, [load, refreshKey]);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      load();
-    }, 300);
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [search, load]);
+    return () => controller.abort();
+  }, [search, refreshKey]);
 
   const handleSubmit = useCallback(
     (values: CategoryFormValues) => {
@@ -194,10 +185,10 @@ export function CategoriesTable() {
 
   if (loadState === "loading") {
     content = (
-      <div className="rounded-lg border">
+      <div className="rounded-2xl border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-amber-50/60 dark:bg-amber-500/5">
               <TableHead>Category</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Products</TableHead>
@@ -273,10 +264,10 @@ export function CategoriesTable() {
     );
   } else {
     content = (
-      <div className="rounded-lg border">
+      <div className="rounded-2xl border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-amber-50/60 dark:bg-amber-500/5">
               <TableHead>Category</TableHead>
               <TableHead className="hidden sm:table-cell">Slug</TableHead>
               <TableHead>Products</TableHead>

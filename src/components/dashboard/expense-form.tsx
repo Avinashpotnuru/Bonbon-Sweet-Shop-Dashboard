@@ -84,7 +84,7 @@ export function ExpenseForm({
 
   return (
     <Dialog open={open} onOpenChange={onDialogOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md bg-card">
         <DialogHeader>
           <DialogTitle>{expense ? "Edit Expense" : "Add Expense"}</DialogTitle>
           <DialogDescription>
@@ -100,7 +100,7 @@ export function ExpenseForm({
           noValidate
         >
           <Field>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
+            <FieldLabel htmlFor="description" required>Description</FieldLabel>
             <FieldContent>
               <Input
                 id="description"
@@ -117,7 +117,7 @@ export function ExpenseForm({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="category">Category</FieldLabel>
+              <FieldLabel htmlFor="category" required>Category</FieldLabel>
               <FieldContent>
                 <Controller
                   control={control}
@@ -144,7 +144,7 @@ export function ExpenseForm({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="amount">Amount</FieldLabel>
+              <FieldLabel htmlFor="amount" required>Amount</FieldLabel>
               <FieldContent>
                 <Input
                   id="amount"
@@ -164,7 +164,7 @@ export function ExpenseForm({
           </div>
 
           <Field>
-            <FieldLabel htmlFor="date">Date</FieldLabel>
+            <FieldLabel htmlFor="date" required>Date</FieldLabel>
             <FieldContent>
               <Input
                 id="date"

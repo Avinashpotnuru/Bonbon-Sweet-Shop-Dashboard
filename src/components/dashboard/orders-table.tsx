@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import type { Order, OrderStatus } from "@/lib/orders-types";
 import { OrderForm, type OrderFormValues } from "@/components/dashboard/order-form";
+import { formatDate, formatMoneyExact } from "@/lib/format";
 
 type SortField = "orderNumber" | "customerName" | "itemCount" | "total" | "status" | "placedAt";
 type SortDirection = "asc" | "desc";
@@ -62,33 +63,18 @@ type LoadState = "loading" | "success" | "error";
 
 const PAGE_SIZE = 8;
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function statusVariant(status: OrderStatus) {
+function statusBadgeClasses(status: OrderStatus) {
   switch (status) {
     case "Delivered":
-      return "default" as const;
+      return "bg-green-500/15 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-800";
     case "Paid":
-      return "secondary" as const;
+      return "bg-amber-500/15 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-800";
     case "Shipped":
-      return "outline" as const;
+      return "bg-amber-500/15 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-800";
     case "Pending":
-      return "outline" as const;
+      return "bg-muted text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-800";
     case "Cancelled":
-      return "destructive" as const;
+      return "bg-red-500/15 text-red-600 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-800";
   }
 }
 
@@ -135,14 +121,14 @@ export function OrdersTable() {
   });
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | undefined>(undefined);
   const [orderToDelete, setOrderToDelete] = useState<Order | undefined>(undefined);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(() => {
+  useEffect(() => {
+    const controller = new AbortController();
     const params = new URLSearchParams({
       search,
       status: statusFilter,
@@ -151,7 +137,7 @@ export function OrdersTable() {
       page: String(page),
       pageSize: String(PAGE_SIZE),
     });
-    fetch(`/api/orders?${params}`)
+    fetch(`/api/orders?${params}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error();
         return r.json();
@@ -162,26 +148,14 @@ export function OrdersTable() {
         setTotalPages(data.totalPages);
         setLoadState("success");
       })
-      .catch(() => {
-        setLoadState("error");
-        setOrders([]);
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          setLoadState("error");
+          setOrders([]);
+        }
       });
-  }, [search, statusFilter, sort, page]);
-
-  useEffect(() => {
-    load();
-  }, [load, refreshKey]);
-
-  useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      setPage(1);
-      load();
-    }, 300);
-    return () => {
-      if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    };
-  }, [search, load]);
+    return () => controller.abort();
+  }, [search, statusFilter, sort, page, refreshKey]);
 
   const safePage = Math.min(page, totalPages);
   const hasActiveFilters = search.trim() !== "" || statusFilter !== "all";
@@ -277,7 +251,10 @@ export function OrdersTable() {
           <Input
             placeholder="Search by order or customer..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
             aria-label="Search orders by order number or customer"
           />
@@ -368,7 +345,7 @@ export function OrdersTable() {
     const isFiltered = hasActiveFilters;
     content = (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-16 text-center">
-        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="mb-1 inline-flex size-10 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
           <PackageX className="size-6" aria-hidden="true" />
         </div>
         <h3 className="font-medium">
@@ -444,13 +421,13 @@ export function OrdersTable() {
                     {order.customerName}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+                    <Badge variant="outline" className={statusBadgeClasses(order.status)}>{order.status}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-right tabular-nums">
                     {order.itemCount}
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
-                    {formatCurrency(order.total)}
+                    {formatMoneyExact(order.total)}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-muted-foreground">
                     {formatDate(order.placedAt)}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, ChevronDown, LogOut, Menu, Settings, User } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -11,8 +11,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -26,10 +24,31 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { navItems } from "@/lib/dashboard-nav";
 import { cn } from "@/lib/utils";
+import { roleHasAny, type Role } from "@/lib/auth-types";
 
-export function SiteHeader() {
+const ROLE_LABELS: Record<Role, string> = {
+  admin: "Admin",
+  manager: "Manager",
+  staff: "Staff",
+};
+
+export function SiteHeader({ role }: { role: Role }) {
   const pathname = usePathname();
-  const current = navItems.find((item) => pathname === item.href);
+  const router = useRouter();
+  const visibleNav = navItems.filter(
+    (item) => !item.permissions || roleHasAny(role, item.permissions),
+  );
+  const current = visibleNav.find((item) => pathname === item.href);
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore — clear client cookie anyway
+    }
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 md:px-6">
@@ -52,7 +71,7 @@ export function SiteHeader() {
             <SheetTitle className="font-heading">Bonbon</SheetTitle>
           </SheetHeader>
           <nav className="mt-4 flex flex-col gap-1" aria-label="Navigation">
-            {navItems.map((item) => {
+            {visibleNav.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -125,38 +144,77 @@ export function SiteHeader() {
               </Avatar>
               <span className="hidden flex-col items-start leading-tight lg:flex">
                 <span className="text-sm font-medium">Avinash</span>
-                <span className="text-[11px] text-muted-foreground">Store owner</span>
+                <span className="text-[11px] text-muted-foreground">{ROLE_LABELS[role]}</span>
               </span>
               <ChevronDown className="hidden size-3.5 text-muted-foreground lg:block" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="flex items-center gap-2">
-              <Avatar className="size-9">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-[oklch(0.55_0.17_330)] text-xs font-semibold text-white">
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="w-64 p-2"
+          >
+            <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-amber-100/80 via-amber-50/60 to-rose-100/60 p-3 shadow-inner ring-1 ring-amber-900/5 dark:from-amber-500/15 dark:via-amber-500/5 dark:to-rose-500/10">
+              <Avatar className="size-11 ring-2 ring-background">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-[oklch(0.55_0.17_330)] text-sm font-semibold text-white">
                   AS
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold">Avinash</span>
-                <span className="text-xs text-muted-foreground">owner@sweetshop.com</span>
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-semibold text-foreground">
+                  Avinash
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  owner@sweetshop.com
+                </span>
+                <span className="mt-1.5 inline-flex w-fit items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                  {ROLE_LABELS[role]}
+                </span>
               </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            </div>
+
+            <div className="my-2 h-px bg-border/70" aria-hidden="true" />
+
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <User className="size-4" aria-hidden="true" />
-                Profile
+              <DropdownMenuItem className="gap-2.5 px-2 py-1.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground dark:bg-rose-500/10">
+                  <User className="size-4" aria-hidden="true" />
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span>Profile</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    Manage your account
+                  </span>
+                </span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="size-4" aria-hidden="true" />
-                Settings
+              <DropdownMenuItem className="gap-2.5 px-2 py-1.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground dark:bg-rose-500/10">
+                  <Settings className="size-4" aria-hidden="true" />
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span>Settings</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    App preferences
+                  </span>
+                </span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
-              <LogOut className="size-4" aria-hidden="true" />
-              Sign out
+
+            <div className="my-2 h-px bg-border/70" aria-hidden="true" />
+
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="gap-2.5 px-2 py-1.5 text-destructive focus:text-destructive"
+            >
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <LogOut className="size-4" aria-hidden="true" />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span>Sign out</span>
+                <span className="text-xs font-normal text-destructive/80">
+                  Log out of your session
+                </span>
+              </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

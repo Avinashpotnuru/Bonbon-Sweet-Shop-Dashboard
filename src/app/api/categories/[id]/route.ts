@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import {
   deleteCategory,
   updateCategory,
@@ -12,6 +13,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["categories.update"]);
     await connectDb();
     const { id } = await params;
     const body = await request.json();
@@ -28,6 +31,8 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["categories.delete"]);
     await connectDb();
     const { id } = await params;
     const result = await deleteCategory(id);

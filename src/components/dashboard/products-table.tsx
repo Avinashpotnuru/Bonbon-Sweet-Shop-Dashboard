@@ -354,10 +354,10 @@ export function ProductsTable() {
   if (products === null) {
     content = (
       <div className="flex flex-col gap-4">
-        <div className="rounded-lg border">
+        <div className="rounded-2xl border">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-amber-50/60 dark:bg-amber-500/5">
                 <TableHead>Product</TableHead>
                 <TableHead className="hidden sm:table-cell">Category</TableHead>
                 <TableHead>Price</TableHead>
@@ -457,10 +457,10 @@ export function ProductsTable() {
   } else {
     content = (
       <div className="flex flex-col gap-4">
-        <div className="rounded-lg border">
+        <div className="rounded-2xl border">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-amber-50/60 dark:bg-amber-500/5">
                 <TableHead>
                   <SortButton
                     field="name"
@@ -525,7 +525,7 @@ export function ProductsTable() {
                         product.stock === 0
                           ? "text-destructive font-medium"
                           : product.stock <= 5
-                            ? "text-yellow-600 dark:text-yellow-500 font-medium"
+                            ? "text-amber-600 dark:text-amber-400 font-medium"
                             : undefined
                       }
                     >
@@ -556,7 +556,6 @@ export function ProductsTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View details</DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={() => openEdit(product)}
                         >

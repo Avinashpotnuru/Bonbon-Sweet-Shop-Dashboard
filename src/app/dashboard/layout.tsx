@@ -3,18 +3,21 @@ import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { requireSession } from "@/lib/auth";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await requireSession();
+
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar role={session.role} />
         <SidebarInset>
-          <SiteHeader />
+          <SiteHeader role={session.role} />
           <main className="flex-1 p-4 md:p-6">{children}</main>
         </SidebarInset>
       </SidebarProvider>

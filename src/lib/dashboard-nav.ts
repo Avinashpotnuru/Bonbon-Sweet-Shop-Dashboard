@@ -11,10 +11,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import type { Permission } from "./auth-types";
+
 export type NavItem = {
   title: string;
   href: string;
   icon: LucideIcon;
+  permissions?: Permission[];
 };
 
 export const navItems: NavItem[] = [
@@ -24,7 +27,7 @@ export const navItems: NavItem[] = [
   { title: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
   { title: "Customers", href: "/dashboard/customers", icon: Users },
   { title: "Inventory", href: "/dashboard/inventory", icon: Boxes },
-  { title: "Expenses", href: "/dashboard/expenses", icon: Wallet },
-  { title: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings },
+  { title: "Expenses", href: "/dashboard/expenses", icon: Wallet, permissions: ["expenses.view"] },
+  { title: "Reports", href: "/dashboard/reports", icon: BarChart3, permissions: ["reports.view"] },
+  { title: "Settings", href: "/dashboard/settings", icon: Settings, permissions: ["users.manage"] },
 ];

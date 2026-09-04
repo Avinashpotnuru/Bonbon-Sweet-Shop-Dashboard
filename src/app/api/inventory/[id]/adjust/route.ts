@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import { connectDb } from "@/lib/mongodb";
 import { stockAdjustSchema } from "@/lib/inventory-schemas";
 import { adjustStock } from "@/lib/inventory-repo";
@@ -9,6 +10,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["inventory.adjust"]);
     await connectDb();
     const { id } = await params;
     const body = await request.json();

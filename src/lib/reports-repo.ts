@@ -1,11 +1,7 @@
 import "server-only";
 
 import { getDb, COLLECTIONS } from "@/lib/mongodb";
-import type { OrderDoc } from "@/lib/orders-repo";
-import type { CustomerDoc } from "@/lib/customers-repo";
-import type { ExpenseDoc } from "@/lib/expenses-repo";
 import { ORDER_STATUSES } from "@/lib/order-schemas";
-import { EXPENSE_CATEGORIES } from "@/lib/expense-schemas";
 
 type Metrics = {
   revenue: number;
@@ -36,96 +32,149 @@ export type ReportsPayload = {
 };
 
 type OrderStatus = (typeof ORDER_STATUSES)[number];
-type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
 export async function getReports(): Promise<ReportsPayload> {
   const db = getDb();
 
-  const [orders, customers, expenses, products] = await Promise.all([
-    db.collection<OrderDoc>(COLLECTIONS.orders).find({}).toArray(),
-    db.collection<CustomerDoc>(COLLECTIONS.customers).find({}).toArray(),
-    db.collection<ExpenseDoc>(COLLECTIONS.expenses).find({}).toArray(),
+  const cancelled: OrderStatus = "Cancelled";
+
+  const [
+    sellable,
+    trendDocs,
+    statusDocs,
+    expenseTotal,
+    expenseGroup,
+    customerCount,
+    activeCount,
+    vipCount,
+    topCustomers,
+    productCount,
+    lowStockCount,
+    outOfStockCount,
+    lowStockProducts,
+  ] = await Promise.all([
+    db
+      .collection(COLLECTIONS.orders)
+      .aggregate<{ revenue: number; orders: number }>([
+        { $match: { status: { $ne: cancelled } } },
+        { $group: { _id: null, revenue: { $sum: "$total" }, orders: { $sum: 1 } } },
+      ])
+      .toArray(),
+    db
+      .collection(COLLECTIONS.orders)
+      .aggregate<TrendPoint & { _id: string }>([
+        { $match: { status: { $ne: cancelled } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$placedAt" } },
+            revenue: { $sum: "$total" },
+            orders: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ])
+      .toArray(),
+    db
+      .collection(COLLECTIONS.orders)
+      .aggregate<GroupTotal & { _id: OrderStatus }>([
+        { $group: { _id: "$status", value: { $sum: "$total" }, count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    db
+      .collection(COLLECTIONS.expenses)
+      .aggregate<{ total: number }>([
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ])
+      .toArray(),
+    db
+      .collection(COLLECTIONS.expenses)
+      .aggregate<GroupTotal & { _id: string }>([
+        { $group: { _id: "$category", value: { $sum: "$amount" }, count: { $sum: 1 } } },
+        { $sort: { value: -1 } },
+      ])
+      .toArray(),
+    db.collection(COLLECTIONS.customers).countDocuments(),
+    db.collection(COLLECTIONS.customers).countDocuments({ status: "Active" }),
+    db.collection(COLLECTIONS.customers).countDocuments({ status: "VIP" }),
+    db
+      .collection(COLLECTIONS.customers)
+      .aggregate<TopCustomer & { _id: unknown }>([
+        { $sort: { totalSpent: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, name: 1, totalSpent: 1, ordersCount: 1 } },
+      ])
+      .toArray(),
+    db.collection(COLLECTIONS.products).countDocuments(),
     db
       .collection(COLLECTIONS.products)
-      .find({}, { projection: { name: 1, sku: 1, stock: 1, status: 1 } })
+      .countDocuments({ stock: { $gt: 0, $lte: 10 } }),
+    db.collection(COLLECTIONS.products).countDocuments({ stock: 0 }),
+    db
+      .collection(COLLECTIONS.products)
+      .aggregate<LowStockProduct & { _id: unknown }>([
+        { $match: { stock: { $gt: 0, $lte: 10 } } },
+        { $sort: { stock: 1 } },
+        { $limit: 8 },
+        { $project: { _id: 0, name: 1, sku: 1, stock: 1, status: 1 } },
+      ])
       .toArray(),
   ]);
 
-  const cancelled: OrderStatus = "Cancelled";
-  const sellableOrders = orders.filter((o) => o.status !== cancelled);
-  const revenue = sellableOrders.reduce((sum, o) => sum + o.total, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const revenue = sellable[0]?.revenue ?? 0;
+  const orderTotal = sellable[0]?.orders ?? 0;
+  const totalExpenses = expenseTotal[0]?.total ?? 0;
 
   const metrics: Metrics = {
     revenue,
-    orders: sellableOrders.length,
-    avgOrderValue: sellableOrders.length ? revenue / sellableOrders.length : 0,
+    orders: orderTotal,
+    avgOrderValue: orderTotal ? revenue / orderTotal : 0,
     expenses: totalExpenses,
     netProfit: revenue - totalExpenses,
-    customers: customers.length,
-    activeCustomers: customers.filter((c) => c.status === "Active").length,
-    vips: customers.filter((c) => c.status === "VIP").length,
-    products: products.length,
-    lowStock: products.filter((p) => p.stock > 0 && p.stock <= 10).length,
-    outOfStock: products.filter((p) => p.stock === 0).length,
+    customers: customerCount,
+    activeCustomers: activeCount,
+    vips: vipCount,
+    products: productCount,
+    lowStock: lowStockCount,
+    outOfStock: outOfStockCount,
   };
 
-  const trendMap = new Map<string, TrendPoint>();
-  for (const o of sellableOrders) {
-    const key = `${o.placedAt.getUTCFullYear()}-${String(o.placedAt.getUTCMonth() + 1).padStart(2, "0")}`;
-    const point = trendMap.get(key) ?? { label: key, revenue: 0, orders: 0 };
-    point.revenue += o.total;
-    point.orders += 1;
-    trendMap.set(key, point);
-  }
-  const revenueTrend = [...trendMap.values()].sort((a, b) =>
-    a.label.localeCompare(b.label),
-  );
+  const revenueTrend = trendDocs.map((d) => ({
+    label: d._id,
+    revenue: d.revenue,
+    orders: d.orders,
+  }));
 
-  const statusMap = new Map<OrderStatus, GroupTotal>();
-  for (const o of orders) {
-    const entry = statusMap.get(o.status) ?? { name: o.status, value: 0, count: 0 };
-    entry.value += o.total;
-    entry.count += 1;
-    statusMap.set(o.status, entry);
-  }
-  const salesByStatus = [...statusMap.values()];
+  const salesByStatus = statusDocs.map((d) => ({
+    name: d._id,
+    value: d.value,
+    count: d.count,
+  }));
 
-  const topCustomers = [...customers]
-    .sort((a, b) => b.totalSpent - a.totalSpent)
-    .slice(0, 5)
-    .map((c) => ({ name: c.name, totalSpent: c.totalSpent, ordersCount: c.ordersCount }));
+  const expensesByCategory = expenseGroup.map((d) => ({
+    name: d._id,
+    value: d.value,
+    count: d.count,
+  }));
 
-  const categoryMap = new Map<ExpenseCategory, GroupTotal>();
-  for (const e of expenses) {
-    const entry = categoryMap.get(e.category) ?? {
-      name: e.category,
-      value: 0,
-      count: 0,
-    };
-    entry.value += e.amount;
-    entry.count += 1;
-    categoryMap.set(e.category, entry);
-  }
-  const expensesByCategory = [...categoryMap.values()].sort((a, b) => b.value - a.value);
+  const topCustomersList = topCustomers.map((c) => ({
+    name: c.name,
+    totalSpent: c.totalSpent,
+    ordersCount: c.ordersCount,
+  }));
 
-  const lowStockProducts = products
-    .filter((p) => p.stock > 0 && p.stock <= 10)
-    .sort((a, b) => a.stock - b.stock)
-    .slice(0, 8)
-    .map((p) => ({
-      name: p.name as string,
-      sku: p.sku as string,
-      stock: p.stock as number,
-      status: p.status as string,
-    }));
+  const lowStockList = lowStockProducts.map((p) => ({
+    name: p.name,
+    sku: p.sku,
+    stock: p.stock,
+    status: p.status,
+  }));
 
   return {
     metrics,
     revenueTrend,
     salesByStatus,
-    topCustomers,
+    topCustomers: topCustomersList,
     expensesByCategory,
-    lowStockProducts,
+    lowStockProducts: lowStockList,
   };
 }

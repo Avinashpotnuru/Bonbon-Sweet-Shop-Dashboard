@@ -80,7 +80,7 @@ export function CategoryForm({
           noValidate
         >
           <Field>
-            <FieldLabel htmlFor="category-name">Name</FieldLabel>
+            <FieldLabel htmlFor="category-name" required>Name</FieldLabel>
             <FieldContent>
               <Input
                 id="category-name"

@@ -52,4 +52,5 @@ export const COLLECTIONS = {
   orders: "orders",
   expenses: "expenses",
   inventoryMovements: "inventory_movements",
+  users: "users",
 } as const;

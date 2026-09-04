@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import { categoryExists } from "@/lib/categories-repo";
 import { connectDb } from "@/lib/mongodb";
 import { productUpdateSchema } from "@/lib/product-schemas";
@@ -28,6 +29,8 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["products.update"]);
     await connectDb();
     const { id } = await params;
     const body = await request.json();
@@ -55,6 +58,8 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["products.delete"]);
     await connectDb();
     const { id } = await params;
     const deleted = await deleteProduct(id);

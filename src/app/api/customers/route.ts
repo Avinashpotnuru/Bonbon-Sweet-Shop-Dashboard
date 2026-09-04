@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import { connectDb } from "@/lib/mongodb";
 import {
   customerCreateSchema,
@@ -29,6 +30,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["customers.create"]);
     await connectDb();
     const body = await request.json();
     const data = customerCreateSchema.parse(body);

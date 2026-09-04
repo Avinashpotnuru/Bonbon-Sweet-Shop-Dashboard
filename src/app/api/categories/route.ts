@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api-helpers";
+import { requireApiAuth, requireApiPermission } from "@/lib/auth";
 import { listCategories, createCategory } from "@/lib/categories-repo";
 import { connectDb } from "@/lib/mongodb";
 import {
@@ -24,6 +25,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["categories.create"]);
     await connectDb();
     const body = await request.json();
     const data = categoryCreateSchema.parse(body);

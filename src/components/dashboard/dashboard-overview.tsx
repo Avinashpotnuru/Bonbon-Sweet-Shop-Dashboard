@@ -37,65 +37,25 @@ import type {
   LowStockProduct,
 } from "@/lib/reports-repo";
 import type { Order, OrderStatus } from "@/lib/orders-types";
+import { roleHasPermission, type Role } from "@/lib/auth-types";
+import {
+  formatCurrency,
+  formatDate,
+  formatMoneyCompact,
+  formatMoneyExact,
+  formatNumber,
+  initials,
+  monthLabel,
+} from "@/lib/format";
 
 type LoadState = "loading" | "success" | "error";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatMoneyExact(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
-
-function formatMoneyCompact(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US").format(value);
-}
-
-function monthLabel(key: string) {
-  const [y, m] = key.split("-");
-  const date = new Date(Number(y), Number(m) - 1, 1);
-  return date.toLocaleDateString("en-US", { month: "short" });
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("");
-}
 
 const avatarTones = [
   "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300",
   "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
   "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
-  "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300",
-  "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300",
+  "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300",
+  "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300",
 ];
 
 function statusVariant(status: OrderStatus) {
@@ -364,13 +324,28 @@ function CategoryBars({ data }: { data: GroupTotal[] }) {
   );
 }
 
-export function DashboardOverview() {
+export function DashboardOverview({ role }: { role: Role }) {
   const [reports, setReports] = useState<ReportsPayload | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [refreshKey, setRefreshKey] = useState(0);
+  const canViewReports = roleHasPermission(role, "reports.view");
 
   useEffect(() => {
+    if (!canViewReports) {
+      fetch("/api/orders?sortField=placedAt&sortDirection=desc&pageSize=6")
+        .then((r) => {
+          if (!r.ok) throw new Error();
+          return r.json();
+        })
+        .then((data) => {
+          setOrders(data.items);
+          setLoadState("success");
+        })
+        .catch(() => setLoadState("error"));
+      return;
+    }
+
     Promise.all([
       fetch("/api/reports").then((r) => {
         if (!r.ok) throw new Error();
@@ -387,7 +362,11 @@ export function DashboardOverview() {
         setLoadState("success");
       })
       .catch(() => setLoadState("error"));
-  }, [refreshKey]);
+  }, [refreshKey, canViewReports]);
+
+  if (!canViewReports) {
+    return <StaffOverview orders={orders} loadState={loadState} onRetry={() => setRefreshKey((k) => k + 1)} />;
+  }
 
   if (loadState === "loading") {
     return (
@@ -442,7 +421,7 @@ export function DashboardOverview() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero banner */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-[oklch(0.55_0.16_340)] to-[oklch(0.42_0.15_15)] p-6 text-primary-foreground md:p-8">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[oklch(0.45_0.1_50)] via-[oklch(0.58_0.13_70)] to-[oklch(0.5_0.14_355)] p-6 text-primary-foreground md:p-8">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-white/10 blur-2xl"
@@ -506,7 +485,7 @@ export function DashboardOverview() {
           value={metrics.customers}
           sub={customersLabel}
           icon={Users}
-          tone="bg-sky-500/15 text-sky-600 dark:text-sky-400"
+          tone="bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400"
         />
         <Kpi
           label="Net profit"
@@ -608,7 +587,7 @@ export function DashboardOverview() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">{order.customerName}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">
-                        {formatDate(order.placedAt)}
+                        {formatDate(order.placedAt, false)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusVariant(order.status)} className="rounded-full">
@@ -710,6 +689,165 @@ function TopCustomerList({ customers }: { customers: TopCustomer[] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function StaffOverview({
+  orders,
+  loadState,
+  onRetry,
+}: {
+  orders: Order[];
+  loadState: LoadState;
+  onRetry: () => void;
+}) {
+  const quickLinks = [
+    {
+      label: "Products",
+      href: "/dashboard/products",
+      icon: PackageSearch,
+      tone: "bg-primary/10 text-primary",
+    },
+    {
+      label: "Inventory",
+      href: "/dashboard/inventory",
+      icon: Boxes,
+      tone: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    },
+    {
+      label: "Orders",
+      href: "/dashboard/orders",
+      icon: ShoppingCart,
+      tone: "bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400",
+    },
+    {
+      label: "Customers",
+      href: "/dashboard/customers",
+      icon: Users,
+      tone: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-500",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[oklch(0.45_0.1_50)] via-[oklch(0.58_0.13_70)] to-[oklch(0.5_0.14_355)] p-6 text-primary-foreground md:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-white/10 blur-2xl"
+        />
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex max-w-xl flex-col gap-2">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur-sm">
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              Bonbon
+            </div>
+            <h2 className="font-heading text-3xl font-bold tracking-tight md:text-4xl">
+              Welcome back to the shop floor
+            </h2>
+            <p className="text-sm text-primary-foreground/85">
+              Track orders, update stock, and serve customers right from the dashboard.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <CalendarDays className="size-5" aria-hidden="true" />
+            <span className="text-sm font-semibold">
+              {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {quickLinks.map((link) => (
+          <Card key={link.label} size="sm" className="group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5">
+            <a href={link.href} className="flex items-center gap-3 p-4">
+              <div className={`inline-flex size-10 items-center justify-center rounded-xl ${link.tone}`}>
+                <link.icon className="size-5" aria-hidden="true" />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="text-sm font-semibold">{link.label}</span>
+                <span className="text-xs text-muted-foreground">Open</span>
+              </div>
+              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </a>
+          </Card>
+        ))}
+      </section>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Recent orders</CardTitle>
+          <Button asChild variant="ghost" size="sm" className="-mr-2 text-muted-foreground">
+            <a href="/dashboard/orders">
+              View all
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </a>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loadState === "loading" ? (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12" />
+              ))}
+            </div>
+          ) : loadState === "error" ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <div className="inline-flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <TriangleAlert className="size-6" aria-hidden="true" />
+              </div>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Couldn&apos;t load recent orders. Please try again.
+              </p>
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                <RotateCcw className="size-4" aria-hidden="true" />
+                Retry
+              </Button>
+            </div>
+          ) : orders.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No orders yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead className="hidden sm:table-cell">Customer</TableHead>
+                  <TableHead className="hidden md:table-cell">Placed</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow key={order.id} className="group">
+                    <TableCell>
+                      <span className="inline-flex items-center gap-2 font-medium tabular-nums">
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                          <ShoppingCart className="size-4" aria-hidden="true" />
+                        </span>
+                        {order.orderNumber}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{order.customerName}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                      {formatDate(order.placedAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(order.status)} className="rounded-full">
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {formatMoneyExact(order.total)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

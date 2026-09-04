@@ -24,33 +24,14 @@ import type {
   TopCustomer,
   TrendPoint,
 } from "@/lib/reports-repo";
+import {
+  formatCurrency,
+  formatMoneyExact,
+  formatNumber,
+  monthLabel,
+} from "@/lib/format";
 
 type LoadState = "loading" | "success" | "error";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatMoneyExact(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US").format(value);
-}
-
-function monthLabel(key: string) {
-  const [y, m] = key.split("-");
-  const date = new Date(Number(y), Number(m) - 1, 1);
-  return date.toLocaleDateString("en-US", { month: "short" });
-}
 
 function Kpi({
   label,
@@ -117,12 +98,12 @@ function RevenueChart({ data }: { data: TrendPoint[] }) {
 
 function Donut({ data }: { data: GroupTotal[] }) {
   const tokenColors = [
+    "#b45309",
+    "#e11d48",
     "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-    "#8b5cf6",
-    "#ef4444",
-    "#14b8a6",
+    "#059669",
+    "#9333ea",
+    "#ea580c",
   ];
   const total = data.reduce((s, d) => s + d.value, 0);
   const w = 120;
@@ -312,7 +293,7 @@ export function ReportsOverview() {
           value={formatNumber(metrics.customers)}
           sub={`${metrics.vips} VIP · ${metrics.activeCustomers} active`}
           icon={Users}
-          tone="bg-sky-600/10 text-sky-600"
+          tone="bg-rose-600/10 text-rose-600"
         />
         <Kpi
           label="Expenses"

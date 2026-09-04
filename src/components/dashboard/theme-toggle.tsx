@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Laptop, Moon, Sun } from "lucide-react";
 
@@ -11,8 +12,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+function useHydrated() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
+
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const mounted = useHydrated();
+
   const Icon = resolvedTheme === "dark" ? Moon : Sun;
 
   return (
@@ -24,7 +35,11 @@ export function ThemeToggle() {
           className="relative h-9 w-9 rounded-xl hover:bg-muted"
           aria-label="Toggle theme"
         >
-          <Icon className="size-4.5" aria-hidden="true" />
+          {mounted ? (
+            <Icon className="size-4.5" aria-hidden="true" />
+          ) : (
+            <span className="size-4.5 rounded-full bg-muted" aria-hidden="true" />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
