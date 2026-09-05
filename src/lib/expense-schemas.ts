@@ -43,6 +43,4 @@ export const expenseListSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(8),
 });
 
-export type ExpenseCreateInput = z.infer<typeof expenseCreateSchema>;
-export type ExpenseUpdateInput = z.infer<typeof expenseUpdateSchema>;
 export type ExpenseListInput = z.infer<typeof expenseListSchema>;

@@ -43,7 +43,7 @@ export function AccountRegisterForm({ nextPath }: { nextPath?: string }) {
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "", confirmPassword: "" },
   });
 
   async function onSubmit(values: Values) {
@@ -55,6 +55,7 @@ export function AccountRegisterForm({ nextPath }: { nextPath?: string }) {
         body: JSON.stringify({
           name: values.name,
           email: values.email,
+          phone: values.phone,
           password: values.password,
         }),
       });
@@ -65,13 +66,13 @@ export function AccountRegisterForm({ nextPath }: { nextPath?: string }) {
       }
 
       // Auto sign-in — registration endpoints never set a session.
-      const loginRes = await fetch("/api/auth/login", {
+      const loginRes = await fetch("/api/auth/login-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: values.email, password: values.password }),
       });
       if (!loginRes.ok) {
-        router.push("/account/login");
+        router.push("/login");
         return;
       }
 
@@ -135,6 +136,27 @@ export function AccountRegisterForm({ nextPath }: { nextPath?: string }) {
       </Field>
 
       <Field>
+        <FieldLabel htmlFor="account-register-phone">Phone (optional)</FieldLabel>
+        <FieldContent>
+          <Input
+            id="account-register-phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="+91 98765 43210"
+            aria-invalid={!!errors.phone}
+            aria-describedby={errors.phone ? "account-register-phone-error" : undefined}
+            {...register("phone")}
+          />
+          {errors.phone && (
+            <FieldError
+              id="account-register-phone-error"
+              errors={[{ message: errors.phone.message }]}
+            />
+          )}
+        </FieldContent>
+      </Field>
+
+      <Field>
         <FieldLabel htmlFor="account-register-password">Password</FieldLabel>
         <FieldContent>
           <Input
@@ -188,7 +210,7 @@ export function AccountRegisterForm({ nextPath }: { nextPath?: string }) {
       <p className="text-center text-sm text-muted-foreground">
         Already a member?{" "}
         <Link
-          href="/account/login"
+          href="/login"
           className="store-link font-semibold text-primary hover:underline"
         >
           Sign in

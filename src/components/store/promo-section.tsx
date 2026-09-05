@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -77,15 +78,26 @@ export function PromoSection() {
           </div>
 
           {/* Gift boxes art */}
-          <div className="relative mx-auto hidden w-full max-w-sm lg:block" aria-hidden="true">
-            {/* Rear box */}
-            <div className="hero-reveal d3 hero-float-slow absolute right-2 top-0 h-36 w-32 -rotate-6 rounded-2xl bg-gradient-to-br from-[oklch(0.72_0.15_75)] to-[oklch(0.62_0.13_70)] shadow-lg" />
-            {/* Front box */}
-            <div className="hero-reveal d4 hero-float relative ml-auto mt-8 h-44 w-40 -rotate-2 rounded-2xl bg-gradient-to-br from-[oklch(0.4_0.09_42)] to-[oklch(0.55_0.13_62)] shadow-2xl">
-              {/* Ribbon */}
-              <div className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 bg-[oklch(0.86_0.11_82)]" />
-              <div className="absolute inset-y-0 left-1/2 w-3 -translate-x-1/2 bg-[oklch(0.86_0.11_82)]" />
-              <div className="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.9_0.13_85)] ring-4 ring-[oklch(0.86_0.11_82)]" />
+          <div className="relative mx-auto w-full max-w-sm">
+            <div className="hero-reveal d3 relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-[oklch(0.4_0.09_42)] to-[oklch(0.62_0.13_70)] shadow-2xl ring-1 ring-white/10">
+              <Image
+                src="/images/gifting-boxes.jpg"
+                alt="A Bonbon festival hamper, hand-packed and tied with ribbon"
+                fill
+                sizes="(max-width: 1024px) 50vw, 30rem"
+                className="object-cover"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.04_50/0.55)] via-transparent to-transparent"
+              />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="flex w-fit items-center gap-1.5 rounded-full bg-[oklch(0.22_0.04_50/0.55)] px-3 py-1 text-xs font-semibold text-[oklch(0.95_0.02_85)] backdrop-blur-sm ring-1 ring-white/20">
+                  <Gift className="size-3.5 text-[oklch(0.86_0.11_82)]" aria-hidden="true" />
+                  Hand-tied &amp; gift-ready
+                </span>
+              </div>
+              <div aria-hidden="true" className="hero-reveal d4 hero-float absolute -bottom-4 -left-3 h-16 w-14 -rotate-6 rounded-xl bg-gradient-to-br from-[oklch(0.72_0.15_75)] to-[oklch(0.62_0.13_70)] shadow-lg" />
             </div>
           </div>
         </div>

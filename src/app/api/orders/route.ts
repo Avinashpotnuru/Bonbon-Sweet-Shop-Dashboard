@@ -9,6 +9,8 @@ import { createOrder, listOrders } from "@/lib/orders-repo";
 export async function GET(request: Request) {
   try {
     await connectDb();
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["orders.view"]);
     const url = new URL(request.url);
     const parsed = orderListSchema.parse({
       search: url.searchParams.get("search") ?? "",

@@ -38,4 +38,3 @@ export const stockAdjustSchema = z
   });
 
 export type InventoryListInput = z.infer<typeof inventoryListSchema>;
-export type StockAdjustInput = z.infer<typeof stockAdjustSchema>;

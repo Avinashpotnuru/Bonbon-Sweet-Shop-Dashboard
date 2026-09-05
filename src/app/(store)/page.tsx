@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Leaf, Sparkles, Star } from "lucide-react";
 
-import { BrandStory } from "@/components/store/brand-story";
 import { CategoryTile } from "@/components/store/category-tile";
 import { HeroArt } from "@/components/store/hero-art";
 import { ProductGrid } from "@/components/store/product-grid";
@@ -153,9 +152,6 @@ export default async function StoreHomePage() {
 
       {/* Why Choose Us */}
       <WhyChooseUs />
-
-      {/* Brand Story */}
-      <BrandStory />
 
       {/* Testimonials */}
       <Testimonials />

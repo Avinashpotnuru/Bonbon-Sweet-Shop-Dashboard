@@ -1,6 +1,6 @@
 import "server-only";
 
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient, MongoServerError, type Db } from "mongodb";
 
 declare global {
   var __mongoClient: MongoClient | undefined;
@@ -75,6 +75,40 @@ export async function connectDb(): Promise<MongoClient> {
     globalForMongo.__mongoClient = fresh;
     await fresh.connect();
     return fresh;
+  }
+}
+
+/**
+ * Retryable-write codes from the driver/server spec: not primary, node
+ * recovering, shutdown in progress, stale epoch/config, etc. These are all
+ * safe to retry — the write was never applied.
+ */
+const RETRYABLE_WRITE_CODES = new Set([10107, 11600, 11602, 13435, 13436, 189, 91]);
+
+function isRetryableWriteError(error: unknown): boolean {
+  if (error instanceof MongoServerError) {
+    const labels = error.errorLabels ?? [];
+    if (labels.includes("RetryableWriteError")) return true;
+    return RETRYABLE_WRITE_CODES.has(Number(error.code ?? -1));
+  }
+  return false;
+}
+
+/**
+ * Runs a write operation, retrying once against a fresh connection when the
+ * replica set reports a transient failure like a mid-election primary switch
+ * ("not primary"). Drops the cached client so the retry discovers the current
+ * primary instead of reusing a stale topology. Non-retryable errors or a
+ * genuinely missing primary surface as-is.
+ */
+export async function retryableWrite<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isRetryableWriteError(error)) throw error;
+    globalForMongo.__mongoClient = undefined;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return operation();
   }
 }
 

@@ -58,6 +58,4 @@ export const productListSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(8),
 });
 
-export type ProductCreateInput = z.infer<typeof productCreateSchema>;
-export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
 export type ProductListInput = z.infer<typeof productListSchema>;

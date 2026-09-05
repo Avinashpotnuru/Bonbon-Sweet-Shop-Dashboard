@@ -1,43 +1,42 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Candy, Clock, History, Package } from "lucide-react";
+import { Candy, Heart, Sparkles, Truck } from "lucide-react";
 
-import { AccountLoginForm } from "@/components/store/account-login-form";
+import { AccountRegisterForm } from "@/components/store/account-register-form";
 import { getSession } from "@/lib/auth";
 import { safeNextPath } from "@/lib/redirect-target";
 
 export const metadata: Metadata = {
-  title: "Sign in — Bonbon",
+  title: "Create account — Bonbon",
   description:
-    "Sign in to your Bonbon account to track orders, save addresses and check out faster.",
+    "Join Bonbon to track orders, save addresses and check out faster.",
 };
 
-const BENEFITS = [
+const PERKS = [
   {
-    icon: History,
-    title: "Track your orders",
-    text: "Every order lands in your account with live status.",
+    icon: Truck,
+    title: "Faster checkout",
+    text: "Your details are remembered for next time.",
   },
   {
-    icon: Package,
-    title: "Check out faster",
-    text: "Saved contact and delivery details, ready to go.",
+    icon: Heart,
+    title: "Order tracking",
+    text: "Every order stays in your account history.",
   },
   {
-    icon: Clock,
-    title: "Your order history",
-    text: "Re-order last month's favourites in one tap.",
+    icon: Sparkles,
+    title: "Updates only",
+    text: "We only email about your orders — no spam.",
   },
 ];
 
 /**
- * Customer-facing sign-in for the storefront. Admins and staff use /login.
- * A `?next=` query param returns the customer to where they were headed
- * (e.g. the checkout page after being asked to sign in).
+ * Customer-facing registration for the storefront. Accounts are stored with
+ * a `customer` role (zero dashboard permissions). On success the form signs
+ * the new customer in automatically, so they land straight in their account.
  */
-export default async function AccountLoginPage({
+export default async function RegisterPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string | string[] }>;
@@ -47,10 +46,7 @@ export default async function AccountLoginPage({
 
   const session = await getSession();
   if (session) {
-    if (session.role === "customer") {
-      redirect(destination ?? "/account/profile");
-    }
-    redirect("/dashboard");
+    redirect(destination ?? "/account/profile");
   }
 
   return (
@@ -65,7 +61,7 @@ export default async function AccountLoginPage({
       />
 
       <div className="mx-auto grid w-full max-w-4xl gap-8 lg:grid-cols-[1fr_24rem] lg:items-center">
-        {/* Brand / benefits */}
+        {/* Brand / perks */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.72_0.15_75)] to-[oklch(0.62_0.13_70)] text-[oklch(0.25_0.06_50)] shadow-md shadow-primary/20">
@@ -78,24 +74,24 @@ export default async function AccountLoginPage({
 
           <div className="flex flex-col gap-2">
             <h1 className="store-display">
-              Welcome{" "}
-              <span className="italic text-[oklch(0.65_0.16_72/0.9)]">back</span>
+              Create your{" "}
+              <span className="italic text-[oklch(0.65_0.16_72/0.9)]">account</span>
             </h1>
             <p className="store-lead max-w-md">
-              Sign in to pick up right where you left off — your sweet tooth
-              will thank you.
+              A tiny sweet-tooth membership. Order, track, and come back to
+              your favourites.
             </p>
           </div>
 
           <ul className="flex flex-col gap-4">
-            {BENEFITS.map((benefit) => (
-              <li key={benefit.title} className="flex items-start gap-3">
+            {PERKS.map((perk) => (
+              <li key={perk.title} className="flex items-start gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.85_0.09_85/0.5)] text-[oklch(0.62_0.13_70)]">
-                  <benefit.icon className="size-5" aria-hidden="true" />
+                  <perk.icon className="size-5" aria-hidden="true" />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <h2 className="text-sm font-semibold">{benefit.title}</h2>
-                  <p className="text-sm text-muted-foreground">{benefit.text}</p>
+                  <h2 className="text-sm font-semibold">{perk.title}</h2>
+                  <p className="text-sm text-muted-foreground">{perk.text}</p>
                 </div>
               </li>
             ))}
@@ -106,31 +102,21 @@ export default async function AccountLoginPage({
         <div className="flex flex-col gap-3 rounded-2xl border bg-card p-6 shadow-card sm:p-8">
           <div className="flex flex-col gap-1">
             <h2 className="font-heading text-xl font-bold tracking-tight">
-              Sign in to your account
+              Join Bonbon
             </h2>
             <p className="text-sm text-muted-foreground">
-              Continue to your Bonbon storefront account.
+              It takes less than a minute.
             </p>
           </div>
 
           <div className="mt-2">
-            <AccountLoginForm nextPath={destination} />
+            <AccountRegisterForm nextPath={destination} />
           </div>
 
           <p className="text-center text-xs text-muted-foreground">
-            By signing in you agree to keep your details safe — we only use
-            them to run your orders.
+            Your details are stored securely — passwords are hashed and never
+            shared.
           </p>
-
-          <div className="mt-2 border-t pt-4 text-center text-sm text-muted-foreground">
-            New to Bonbon?{" "}
-            <Link
-              href="/account/register"
-              className="store-link font-semibold text-primary hover:underline"
-            >
-              Create an account
-            </Link>
-          </div>
         </div>
       </div>
     </div>

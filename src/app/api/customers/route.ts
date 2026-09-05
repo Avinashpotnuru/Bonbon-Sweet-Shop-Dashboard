@@ -12,6 +12,8 @@ import { createCustomer, listCustomers } from "@/lib/customers-repo";
 export async function GET(request: Request) {
   try {
     await connectDb();
+    const session = await requireApiAuth();
+    requireApiPermission(session, ["customers.view"]);
     const url = new URL(request.url);
     const parsed = customerListSchema.parse({
       search: url.searchParams.get("search") ?? "",

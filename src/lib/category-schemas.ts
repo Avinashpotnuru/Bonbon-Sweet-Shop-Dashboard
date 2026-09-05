@@ -13,6 +13,3 @@ export const categoryUpdateSchema = categoryCreateSchema.partial();
 export const categoryListSchema = z.object({
   search: z.string().optional().default(""),
 });
-
-export type CategoryCreateInput = z.infer<typeof categoryCreateSchema>;
-export type CategoryUpdateInput = z.infer<typeof categoryUpdateSchema>;

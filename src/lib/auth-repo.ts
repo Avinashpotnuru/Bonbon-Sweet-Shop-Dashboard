@@ -4,7 +4,7 @@ import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { ObjectId } from "mongodb";
 
-import { getDb } from "./mongodb";
+import { getDb, retryableWrite } from "./mongodb";
 import type { PublicUser, Role, User } from "./auth-types";
 
 const SALT_LEN = 16;
@@ -16,6 +16,7 @@ export type UserDoc = {
   email: string;
   passwordHash: string;
   name: string;
+  phone?: string;
   role: Role;
   createdAt: string;
 };
@@ -58,6 +59,7 @@ export async function createUser(input: {
   password: string;
   name: string;
   role: Role;
+  phone?: string;
 }): Promise<PublicUser> {
   const email = input.email.trim().toLowerCase();
   const existing = await findUserByEmail(email);
@@ -67,18 +69,25 @@ export async function createUser(input: {
 
   const passwordHash = await hashPassword(input.password);
   const now = new Date().toISOString();
-  const result = await getDb().collection<UserDoc>("users").insertOne({
+  const doc: UserDoc = {
     email,
     passwordHash,
     name: input.name.trim(),
     role: input.role,
     createdAt: now,
-  });
+  };
+  if (input.phone?.trim()) {
+    doc.phone = input.phone.trim();
+  }
+  const result = await retryableWrite(() =>
+    getDb().collection<UserDoc>("users").insertOne(doc),
+  );
 
   return {
     id: result.insertedId.toHexString(),
     email,
     name: input.name.trim(),
+    phone: input.phone?.trim() || undefined,
     role: input.role,
     createdAt: now,
   };

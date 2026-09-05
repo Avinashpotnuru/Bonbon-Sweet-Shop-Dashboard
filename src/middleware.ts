@@ -2,8 +2,8 @@ import { jwtVerify } from "jose";
 import { NextResponse, type NextRequest } from "next/server";
 
 const SESSION_COOKIE = "bonbon_session";
-
-const PUBLIC_ACCOUNT_PATHS = ["/account/login", "/account/register"];
+const ADMIN_LOGIN = "/admin/login";
+const CUSTOMER_LOGIN = "/login";
 
 const AUTH_SECRET = new TextEncoder().encode(process.env.AUTH_SECRET ?? "");
 
@@ -22,37 +22,39 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/account")) {
-    if (PUBLIC_ACCOUNT_PATHS.includes(pathname)) {
-      return NextResponse.next();
-    }
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     if (!token) {
       const url = request.nextUrl.clone();
-      url.pathname = "/account/login";
+      url.pathname = CUSTOMER_LOGIN;
       return NextResponse.redirect(url);
     }
     return NextResponse.next();
   }
 
-  const role = await getSessionRole(request);
+  const isAdminZone =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
-  const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = "/login";
-
-  if (!role) {
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Storefront customers are never allowed into the admin dashboard.
-  if (role === "customer") {
-    const accountUrl = request.nextUrl.clone();
-    accountUrl.pathname = "/account/profile";
-    return NextResponse.redirect(accountUrl);
+  if (isAdminZone) {
+    if (pathname === ADMIN_LOGIN) {
+      return NextResponse.next();
+    }
+    const role = await getSessionRole(request);
+    if (!role) {
+      const url = request.nextUrl.clone();
+      url.pathname = ADMIN_LOGIN;
+      return NextResponse.redirect(url);
+    }
+    if (role === "customer") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/account/profile";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/account/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/account/:path*"],
 };

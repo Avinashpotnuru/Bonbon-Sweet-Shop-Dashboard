@@ -79,7 +79,7 @@ export function StoreHeader({ sessionRole }: { sessionRole: Role | null }) {
     ? "/dashboard"
     : sessionRole === "customer"
       ? "/account/profile"
-      : "/account/login";
+      : "/login";
   const accountLabel = isStaff
     ? "Dashboard"
     : sessionRole === "customer"

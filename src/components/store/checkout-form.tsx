@@ -75,7 +75,7 @@ export function CheckoutForm() {
     });
     if (!result.ok) {
       if (result.code === "LOGIN_REQUIRED") {
-        router.replace("/account/login?next=/checkout");
+        router.replace("/login?next=/checkout");
         return;
       }
       setServerError(result.error);

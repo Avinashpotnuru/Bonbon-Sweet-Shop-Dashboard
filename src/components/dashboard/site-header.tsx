@@ -47,7 +47,7 @@ export function SiteHeader({ role }: { role: Role }) {
     } catch {
       // ignore — clear client cookie anyway
     }
-    router.push("/login");
+    router.push("/admin/login");
     router.refresh();
   }
 

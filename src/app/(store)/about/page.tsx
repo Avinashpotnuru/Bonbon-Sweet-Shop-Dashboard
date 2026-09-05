@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -91,9 +92,17 @@ function StoryPlate() {
       </div>
 
       <div className="hero-reveal d3 relative aspect-[4/5] w-full overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-[oklch(0.4_0.09_42)] via-[oklch(0.55_0.13_62)] to-[oklch(0.7_0.15_72)] shadow-card">
+        <Image
+          src="/images/story-kitchen.jpg"
+          alt="A fresh batch of hand-made sweets in the Bonbon kitchen"
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 30rem"
+          className="object-cover"
+        />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/20"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[oklch(0.28_0.08_45/0.55)] via-transparent to-[oklch(0.22_0.04_50/0.6)]"
         />
         <div className="absolute inset-0 m-auto size-[78%] rounded-full border border-white/25" />
         <div className="absolute inset-0 m-auto size-[62%] rounded-full border border-white/15" />
@@ -104,7 +113,7 @@ function StoryPlate() {
           <span className="font-heading text-xl font-semibold tracking-tight text-white/95">
             Born in a Mumbai kitchen
           </span>
-          <span className="max-w-[16ch] text-sm leading-relaxed text-white/80">
+          <span className="max-w-[16ch] text-sm leading-relaxed text-white/85">
             One pot, one recipe, and a very long queue
           </span>
         </div>
@@ -319,48 +328,80 @@ export default function AboutPage() {
           {/* Art montage */}
           <div className="order-1 grid grid-cols-2 gap-4 lg:order-2">
             <div className="flex flex-col gap-4 pt-10">
-              <div className="store-img-zoom overflow-hidden rounded-3xl bg-gradient-to-br from-[oklch(0.4_0.09_42)] via-[oklch(0.55_0.13_62)] to-[oklch(0.7_0.15_72)] shadow-card">
-                <div className="flex aspect-[3/4] flex-col items-center justify-center gap-2 p-6 text-center">
+              <div className="store-img-zoom relative overflow-hidden rounded-3xl bg-[oklch(0.4_0.09_42)] shadow-card">
+                <Image
+                  src="/images/quality-batch.jpg"
+                  alt="Freshly finished batch of hand-made sweets, numbered and ready"
+                  fill
+                  sizes="(max-width: 768px) 45vw, 20rem"
+                  className="object-cover"
+                />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.04_50/0.85)] via-transparent to-[oklch(0.28_0.08_45/0.25)]" />
+                <div className="relative flex aspect-[3/4] flex-col items-center justify-center gap-2 p-6 text-center">
                   <Check className="size-7 text-white/90" aria-hidden="true" />
                   <span className="font-heading text-lg font-semibold text-white/95">
                     Batch No. 4,014
                   </span>
-                  <span className="text-xs leading-relaxed text-white/75">
+                  <span className="text-xs leading-relaxed text-white/80">
                     Made today · 9:40 am
                   </span>
                 </div>
               </div>
-              <div className="store-img-zoom overflow-hidden rounded-3xl bg-gradient-to-br from-[oklch(0.7_0.15_72)] via-[oklch(0.78_0.14_80)] to-[oklch(0.85_0.11_85)] shadow-card">
-                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 p-6 text-center">
-                  <Wheat className="size-7 text-[oklch(0.3_0.07_50)]" aria-hidden="true" />
-                  <span className="font-heading text-base font-semibold text-[oklch(0.25_0.06_50)]">
+              <div className="store-img-zoom relative overflow-hidden rounded-3xl bg-[oklch(0.7_0.15_72)] shadow-card">
+                <Image
+                  src="/images/quality-butter.jpg"
+                  alt="Cultured butter from a local dairy used in every batch"
+                  fill
+                  sizes="(max-width: 768px) 45vw, 20rem"
+                  className="object-cover"
+                />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.04_50/0.85)] via-transparent to-[oklch(0.28_0.08_45/0.25)]" />
+                <div className="relative flex aspect-[4/3] flex-col items-center justify-center gap-2 p-6 text-center">
+                  <Wheat className="size-7 text-white/90" aria-hidden="true" />
+                  <span className="font-heading text-base font-semibold text-white/95">
                     Cultured butter
                   </span>
-                  <span className="text-xs text-[oklch(0.3_0.07_50)]">
+                  <span className="text-xs text-white/80">
                     From a local dairy
                   </span>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-4 pb-10">
-              <div className="store-img-zoom overflow-hidden rounded-3xl bg-gradient-to-br from-[oklch(0.6_0.14_30)] via-[oklch(0.68_0.13_50)] to-[oklch(0.76_0.12_70)] shadow-card">
-                <div className="flex aspect-[3/4] flex-col items-center justify-center gap-2 p-6 text-center">
+              <div className="store-img-zoom relative overflow-hidden rounded-3xl bg-[oklch(0.6_0.14_30)] shadow-card">
+                <Image
+                  src="/images/quality-fruit.jpg"
+                  alt="Real fruit, pitted and prepared for the day's batch"
+                  fill
+                  sizes="(max-width: 768px) 45vw, 20rem"
+                  className="object-cover"
+                />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[oklch(0.22_0.04_50/0.85)] via-transparent to-[oklch(0.28_0.08_45/0.25)]" />
+                <div className="relative flex aspect-[3/4] flex-col items-center justify-center gap-2 p-6 text-center">
                   <Leaf className="size-7 text-white/90" aria-hidden="true" />
                   <span className="font-heading text-lg font-semibold text-white/95">
                     Real fruit
                   </span>
-                  <span className="text-xs leading-relaxed text-white/75">
+                  <span className="text-xs leading-relaxed text-white/80">
                     Pectin only. No fake flavours.
                   </span>
                 </div>
               </div>
-              <div className="store-img-zoom overflow-hidden rounded-3xl bg-[oklch(0.22_0.04_50)] shadow-card">
-                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 p-6 text-center">
-                  <Check className="size-7 text-[oklch(0.72_0.15_75)]" aria-hidden="true" />
+              <div className="store-img-zoom relative overflow-hidden rounded-3xl bg-[oklch(0.22_0.04_50)] shadow-card">
+                <Image
+                  src="/images/quality-fresh.jpg"
+                  alt="Sweets packed for delivery in insulated cold-chain packaging"
+                  fill
+                  sizes="(max-width: 768px) 45vw, 20rem"
+                  className="object-cover"
+                />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[oklch(0.18_0.03_40/0.9)] via-transparent to-transparent" />
+                <div className="relative flex aspect-[4/3] flex-col items-center justify-center gap-2 p-6 text-center">
+                  <Check className="size-7 text-[oklch(0.86_0.11_82)]" aria-hidden="true" />
                   <span className="font-heading text-base font-semibold text-[oklch(0.93_0.02_85)]">
                     Fresh to your door
                   </span>
-                  <span className="text-xs text-[oklch(0.72_0.03_60)]">
+                  <span className="text-xs text-[oklch(0.75_0.03_65)]">
                     Insulated, cold-chain sealed
                   </span>
                 </div>

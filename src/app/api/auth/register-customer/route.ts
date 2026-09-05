@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       email: data.email,
       password: data.password,
       name: data.name,
+      phone: data.phone,
       role: "customer",
     });
     return NextResponse.json(

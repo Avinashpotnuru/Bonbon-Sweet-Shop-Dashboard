@@ -203,11 +203,6 @@ export async function deleteSavedAddress(
   return addresses;
 }
 
-export async function getAccountSettings(userId: string): Promise<AccountSettings> {
-  const profile = await ensureProfile(userId);
-  return { ...DEFAULT_SETTINGS, ...profile.settings };
-}
-
 export async function updateAccountSettings(
   userId: string,
   settings: Partial<AccountSettings>,
