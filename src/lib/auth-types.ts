@@ -1,4 +1,4 @@
-export type Role = "admin" | "manager" | "staff";
+export type Role = "admin" | "manager" | "staff" | "customer";
 
 export type User = {
   id: string;
@@ -103,6 +103,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "inventory.view",
     "inventory.adjust",
   ],
+  /** Storefront customers. No administrative permissions — cannot reach the dashboard. */
+  customer: [],
 };
 
 export function roleHasPermission(

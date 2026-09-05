@@ -3,14 +3,14 @@ import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { requireSession } from "@/lib/auth";
+import { requireDashboardAccess } from "@/lib/auth";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await requireSession();
+  const session = await requireDashboardAccess();
 
   return (
     <TooltipProvider delayDuration={0}>

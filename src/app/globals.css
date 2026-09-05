@@ -161,3 +161,20 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[fade-in-up_0\.6s_ease-out_both\] {
+    animation: none !important;
+  }
+}
