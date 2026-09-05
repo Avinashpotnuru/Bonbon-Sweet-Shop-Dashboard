@@ -47,6 +47,12 @@ export function LoginForm() {
         );
         return;
       }
+      if (data.user?.role === "customer") {
+        setServerError(
+          "This is the staff dashboard login. Customer accounts sign in from the storefront account area.",
+        );
+        return;
+      }
       router.push("/dashboard");
       router.refresh();
     } catch {

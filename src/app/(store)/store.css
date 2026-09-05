@@ -1,0 +1,488 @@
+/* ==========================================================================
+   BONBON — CUSTOMER-FACING SWEET SHOP DESIGN SYSTEM
+   --------------------------------------------------------------------------
+   Everything here is scoped under `.store-scope` (the wrapper div rendered by
+   the (store) layout), so it layers on top of the shared globals.css WITHOUT
+   touching the Admin Dashboard.
+
+   Direction: premium Indian sweet shop. Elegant, luxurious but approachable,
+   warm + appetizing, modern-Indian kesar/saffron accent on a deep spiced
+   chocolate + ivory palette. Rich presentation, strong typography, excellent
+   whitespace, subtle depth, polished hover states, restrained motion.
+
+   Anti-patterns deliberately avoided: generic SaaS look, excessive gradients,
+   glassmorphism, over-rounded everything, heavy shadows, clutter, random
+   animation. All motion respects prefers-reduced-motion.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. DESIGN TOKENS (light) — scoped, additive
+   -------------------------------------------------------------------------- */
+.store-scope {
+  /* Surfaces */
+  --background: oklch(0.978 0.014 85);            /* warm ivory, not stark white */
+  --foreground: oklch(0.24 0.05 45);              /* deep espresso brown */
+  --card: oklch(0.999 0.004 88);                  /* warm white card */
+  --card-foreground: oklch(0.24 0.05 45);
+  --popover: oklch(0.999 0.004 88);
+  --popover-foreground: oklch(0.24 0.05 45);
+
+  /* Brand */
+  --primary: oklch(0.42 0.09 45);                 /* spiced chocolate brown */
+  --primary-foreground: oklch(0.98 0.015 85);     /* creamy ivory */
+  --secondary: oklch(0.94 0.03 78);               /* warm latte */
+  --secondary-foreground: oklch(0.36 0.06 48);
+
+  /* Supporting */
+  --muted: oklch(0.95 0.02 84);                   /* soft cream */
+  --muted-foreground: oklch(0.49 0.045 55);       /* warm taupe (>=4.5:1) */
+  --accent: oklch(0.86 0.09 85);                  /* kesar saffron tint */
+  --accent-foreground: oklch(0.32 0.09 50);
+  --destructive: oklch(0.53 0.2 30);              /* deep rose */
+
+  /* Lines + focus */
+  --border: oklch(0.9 0.03 80);                   /* warm hairline */
+  --input: oklch(0.9 0.03 80);
+  --ring: oklch(0.62 0.13 70);                    /* saffron focus ring */
+
+  --radius: 0.75rem;                              /* 12px — tailored, not pill-y */
+
+  /* Charts (warm set) */
+  --chart-1: oklch(0.58 0.12 50);
+  --chart-2: oklch(0.55 0.12 30);
+  --chart-3: oklch(0.72 0.16 75);
+  --chart-4: oklch(0.55 0.11 350);
+  --chart-5: oklch(0.6 0.13 20);
+  --chart-6: oklch(0.5 0.1 250);
+
+  /* Store-specific accent palette */
+  --store-saffron: oklch(0.72 0.15 75);
+  --store-saffron-strong: oklch(0.65 0.16 72);
+  --store-maroon: oklch(0.35 0.12 25);
+  --store-ivory: oklch(0.985 0.012 85);
+
+  /* Footer — rich warm espresso close */
+  --store-footer-bg: oklch(0.22 0.04 50);
+  --store-footer-fg: oklch(0.93 0.02 85);
+  --store-footer-muted: oklch(0.72 0.03 60);
+
+  /* Depth — subtle, warm-tinted */
+  --store-shadow-soft: 0 1px 2px oklch(0.3 0.05 45 / 0.04);
+  --store-shadow-card: 0 1px 2px oklch(0.3 0.05 45 / 0.05),
+    0 10px 30px -12px oklch(0.3 0.05 45 / 0.14);
+  --store-shadow-card-hover: 0 2px 4px oklch(0.3 0.05 45 / 0.06),
+    0 20px 44px -16px oklch(0.3 0.05 45 / 0.24);
+  --store-shadow-cta: 0 8px 22px -8px oklch(0.42 0.09 45 / 0.45);
+}
+
+/* --------------------------------------------------------------------------
+   1b. DESIGN TOKENS (dark) — scoped, additive
+   -------------------------------------------------------------------------- */
+.dark .store-scope {
+  --background: oklch(0.185 0.025 50);            /* warm near-black espresso */
+  --foreground: oklch(0.95 0.02 85);              /* cream */
+  --card: oklch(0.23 0.03 50);
+  --card-foreground: oklch(0.95 0.02 85);
+  --popover: oklch(0.23 0.03 50);
+  --popover-foreground: oklch(0.95 0.02 85);
+
+  --primary: oklch(0.78 0.13 70);                 /* warm gold on dark */
+  --primary-foreground: oklch(0.2 0.04 55);
+  --secondary: oklch(0.28 0.03 50);
+  --secondary-foreground: oklch(0.95 0.02 85);
+
+  --muted: oklch(0.26 0.03 50);
+  --muted-foreground: oklch(0.72 0.035 65);
+  --accent: oklch(0.38 0.12 60);
+  --accent-foreground: oklch(0.96 0.03 80);
+  --destructive: oklch(0.66 0.19 28);
+
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.14);
+  --ring: oklch(0.8 0.14 75);
+
+  --chart-1: oklch(0.74 0.12 70);
+  --chart-2: oklch(0.7 0.12 30);
+  --chart-3: oklch(0.78 0.15 80);
+  --chart-4: oklch(0.7 0.11 350);
+  --chart-5: oklch(0.74 0.12 20);
+  --chart-6: oklch(0.7 0.1 250);
+
+  --store-saffron: oklch(0.85 0.13 80);
+  --store-saffron-strong: oklch(0.79 0.14 78);
+  --store-ivory: oklch(0.21 0.03 50);
+
+  --store-footer-bg: oklch(0.15 0.02 50);
+  --store-footer-fg: oklch(0.9 0.02 85);
+  --store-footer-muted: oklch(0.68 0.03 60);
+
+  --store-shadow-soft: 0 1px 2px oklch(0 0 0 / 0.3);
+  --store-shadow-card: 0 1px 2px oklch(0 0 0 / 0.35), 0 12px 28px -12px oklch(0 0 0 / 0.5);
+  --store-shadow-card-hover: 0 2px 4px oklch(0 0 0 / 0.4), 0 22px 44px -16px oklch(0 0 0 / 0.65);
+  --store-shadow-cta: 0 8px 22px -8px oklch(0 0 0 / 0.55);
+}
+
+/* --------------------------------------------------------------------------
+   2. TYPOGRAPHY UTILITIES
+   Playfair Display (display / headings) + Geist (body + mono). Strong scale,
+   tight display tracking, wide eyebrow tracking. Generous leading.
+   -------------------------------------------------------------------------- */
+.store-scope .store-display {
+  font-family: var(--font-playfair), serif;
+  font-size: clamp(2.6rem, 5.5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.store-scope .store-h1 {
+  font-family: var(--font-playfair), serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.store-scope .store-h2 {
+  font-family: var(--font-playfair), serif;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.store-scope .store-h3 {
+  font-family: var(--font-playfair), serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.store-scope .store-eyebrow {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--store-saffron-strong, var(--ring));
+}
+
+.store-scope .store-lead {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
+/* --------------------------------------------------------------------------
+   3. SECTION HEADINGS & RHYTHM
+   Spacious vertical rhythm for a luxury feel.
+   -------------------------------------------------------------------------- */
+.store-scope .store-section {
+  padding-top: clamp(4rem, 9vw, 7rem);
+  padding-bottom: clamp(4rem, 9vw, 7rem);
+}
+
+.store-scope .store-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 2.5rem;
+}
+
+.store-scope .store-section-title {
+  font-family: var(--font-playfair), serif;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.store-scope .store-section-sub {
+  max-width: 36rem;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+
+/* --------------------------------------------------------------------------
+   4. SHADOW UTILITIES (subtle depth — never heavy)
+   -------------------------------------------------------------------------- */
+.store-scope .shadow-soft { box-shadow: var(--store-shadow-soft); }
+.store-scope .shadow-card { box-shadow: var(--store-shadow-card); }
+.store-scope .shadow-card-hover { box-shadow: var(--store-shadow-card-hover); }
+.store-scope .shadow-cta { box-shadow: var(--store-shadow-cta); }
+
+/* --------------------------------------------------------------------------
+   5. PLACEMENT / MICRO-INTERACTION UTILITIES
+   Polished hover + tap states, restrained. All gated by reduced-motion.
+   -------------------------------------------------------------------------- */
+.store-scope .store-hover-lift {
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.store-scope .store-img-zoom > img,
+.store-scope .store-img-zoom > .store-art {
+  transition: transform 600ms ease-out;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .store-scope .store-hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--store-shadow-card-hover);
+  }
+
+  .store-scope .store-hover-lift:hover .store-img-zoom > img,
+  .store-scope .store-hover-lift:hover .store-img-zoom > .store-art {
+    transform: scale(1.04);
+  }
+
+  /* Growing underline for links: hidden by default, reveals on hover,
+     stays visible when `.is-active` (current page). */
+  .store-scope .store-link {
+    position: relative;
+  }
+  .store-scope .store-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 2px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 220ms ease-out;
+  }
+  .store-scope .store-link:hover::after,
+  .store-scope .store-link.is-active::after {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-scope .store-hover-lift,
+  .store-scope .store-img-zoom > img,
+  .store-scope .store-img-zoom > .store-art,
+  .store-scope .store-link::after {
+    transition: none;
+  }
+  .store-scope .store-hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. FOOTER SURFACE (rich warm close)
+   Deep espresso surface with cream text for a premium finish.
+   -------------------------------------------------------------------------- */
+.store-scope .store-footer-bg { background-color: var(--store-footer-bg); }
+.store-scope .store-footer-text { color: var(--store-footer-fg); }
+.store-scope .store-footer-muted { color: var(--store-footer-muted); }
+.store-scope .store-footer-border { border-color: color-mix(in oklch, var(--store-footer-fg) 14%, transparent); }
+
+/* --------------------------------------------------------------------------
+   7. BUTTON + CARD + INPUT REFINEMENT (scoped, token-driven)
+   Buttons/cards/badges/inputs inherit the store tokens above automatically.
+   These add the deliberate press + focus micro-interactions only.
+   -------------------------------------------------------------------------- */
+.store-scope button:active:not(:disabled),
+.store-scope [role="button"]:active:not(:disabled) {
+  transform: scale(0.985);
+  transition: transform 120ms ease-out;
+}
+
+/* Accessible, visible focus (WCAG 2.2) — saffron ring, enough surface */
+.store-scope :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.store-scope input:focus-visible,
+.store-scope textarea:focus-visible,
+.store-scope select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-scope button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. HERO — premium entrance + parallax
+   Reveal-on-load (staggered), gentle floating badge, and a subtle scroll
+   parallax pushed only onto the decorative background layer via a CSS custom
+   property (`--hero-parallax-y`) set by HeroParallax. All motion is gated by
+   prefers-reduced-motion and composition-friendly (transform + opacity only).
+   -------------------------------------------------------------------------- */
+.store-scope .hero-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: hero-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.store-scope .hero-reveal.d1 { animation-delay: 0.05s; }
+.store-scope .hero-reveal.d2 { animation-delay: 0.13s; }
+.store-scope .hero-reveal.d3 { animation-delay: 0.22s; }
+.store-scope .hero-reveal.d4 { animation-delay: 0.3s; }
+.store-scope .hero-reveal.d5 { animation-delay: 0.4s; }
+.store-scope .hero-reveal.d6 { animation-delay: 0.52s; }
+
+/* --------------------------------------------------------------------------
+   8b. STICKY HEADER — anchor offset
+   In-page anchors (`/#story`, `/shop#categories`) scroll below the sticky
+   header instead of being tucked underneath it. Scoped to store elements only.
+   -------------------------------------------------------------------------- */
+.store-scope [id] {
+  scroll-margin-top: 5.25rem;
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Decorative background wash — receives the parallax translate. */
+.store-scope .hero-parallax {
+  transform: translate3d(0, var(--hero-parallax-y, 0px), 0);
+  will-change: transform;
+}
+
+/* Gentle floating for the small floating card/badge chips (subtle drift). */
+.store-scope .hero-float {
+  animation: hero-float 6s ease-in-out infinite;
+}
+.store-scope .hero-float-slow {
+  animation: hero-float 8.5s ease-in-out infinite;
+}
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Tasteful hover lift for the layered art cards (desktop / motion allowed). */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .store-scope .hero-art-card {
+    transition: transform 260ms ease-out, box-shadow 260ms ease-out;
+  }
+  .store-scope .hero-art-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--store-shadow-card-hover);
+  }
+}
+
+/* Respect reduced motion: freeze all hero animation into its final state. */
+@media (prefers-reduced-motion: reduce) {
+  .store-scope .hero-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .store-scope .hero-float,
+  .store-scope .hero-float-slow {
+    animation: none;
+  }
+  .store-scope .hero-parallax {
+    transform: none;
+    will-change: auto;
+  }
+  .store-scope .hero-art-card {
+    transition: none;
+  }
+  .store-scope .hero-art-card:hover {
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9. SHOP PAGE — filter bar, page header entrance, pagination
+   -------------------------------------------------------------------------- */
+
+/* Page header entrance */
+.store-scope .shop-header-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.store-scope .shop-header-reveal.d1 { animation-delay: 0.05s; }
+.store-scope .shop-header-reveal.d2 { animation-delay: 0.12s; }
+.store-scope .shop-header-reveal.d3 { animation-delay: 0.2s; }
+.store-scope .shop-header-reveal.d4 { animation-delay: 0.28s; }
+
+/* Filter bar fade in */
+.store-scope .shop-filters-reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: hero-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+/* Pagination button hover glow */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .store-scope nav[aria-label="Pagination"] button:not(:disabled):not([aria-current="page"]):hover {
+    background-color: oklch(0.94 0.03 78);
+    border-color: oklch(0.72 0.15 75 / 0.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-scope .shop-header-reveal,
+  .store-scope .shop-filters-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. ORDER SUCCESS — subtle celebratory entrance
+   A gentle staggered fade-up for the receipt, plus a single restrained "pop"
+   for the confirmation checkmark. No churn, no confetti — just a calm,
+   reassuring confirmation. All gated by prefers-reduced-motion.
+   -------------------------------------------------------------------------- */
+.store-scope .order-success-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: hero-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.store-scope .order-success-reveal.d1 { animation-delay: 0.08s; }
+.store-scope .order-success-reveal.d2 { animation-delay: 0.18s; }
+.store-scope .order-success-reveal.d3 { animation-delay: 0.3s; }
+
+.store-scope .order-success-pop {
+  animation: success-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+@keyframes success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-scope .order-success-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .store-scope .order-success-pop {
+    animation: none;
+  }
+}

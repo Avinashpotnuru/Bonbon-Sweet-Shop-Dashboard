@@ -73,6 +73,25 @@ export async function requireSession(): Promise<SessionPayload> {
   return session;
 }
 
+/** Roles allowed into the admin dashboard. Customers are never included. */
+export const DASHBOARD_ROLES: Role[] = ["admin", "manager", "staff"];
+
+/**
+ * Guard for the admin dashboard pages. Requires a valid session whose role
+ * is allowed into the dashboard; storefront customers are redirected to
+ * their account area and never see any dashboard content.
+ */
+export async function requireDashboardAccess(): Promise<SessionPayload> {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+  if (!DASHBOARD_ROLES.includes(session.role)) {
+    redirect("/account/profile");
+  }
+  return session;
+}
+
 /**
  * Guard for owner/staff-restricted pages. Redirects a signed-in user with an
  * unauthorized role back to the dashboard.

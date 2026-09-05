@@ -11,6 +11,9 @@ export default async function LoginPage() {
   const session = await getSession();
 
   if (session) {
+    if (session.role === "customer") {
+      redirect("/account/profile");
+    }
     redirect("/dashboard");
   }
 

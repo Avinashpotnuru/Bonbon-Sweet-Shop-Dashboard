@@ -30,6 +30,7 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: "Admin",
   manager: "Manager",
   staff: "Staff",
+  customer: "Customer",
 };
 
 export function SiteHeader({ role }: { role: Role }) {

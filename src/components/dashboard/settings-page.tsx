@@ -47,6 +47,7 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: "Admin",
   manager: "Manager",
   staff: "Staff",
+  customer: "Customer",
 };
 
 const STORE_KEY = "bonbon-settings";
