@@ -12,7 +12,6 @@ export type CartPricingLine = {
   quantity: number;
 };
 
-export const CURRENCY = "USD";
 export const FREE_SHIPPING_THRESHOLD = 60;
 export const DELIVERY_CHARGE = 5.99;
 

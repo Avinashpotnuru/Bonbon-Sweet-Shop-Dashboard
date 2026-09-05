@@ -44,6 +44,4 @@ export const orderListSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(8),
 });
 
-export type OrderCreateInput = z.infer<typeof orderCreateSchema>;
-export type OrderUpdateInput = z.infer<typeof orderUpdateSchema>;
 export type OrderListInput = z.infer<typeof orderListSchema>;

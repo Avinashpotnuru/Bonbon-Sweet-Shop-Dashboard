@@ -75,15 +75,6 @@ export async function listCategories(search = "") {
   );
 }
 
-export async function fetchCategoryById(id: string) {
-  const db = getDb();
-  if (!ObjectId.isValid(id)) return null;
-  const doc = await db
-    .collection<CategoryDoc>(COLLECTIONS.categories)
-    .findOne({ _id: new ObjectId(id) });
-  return doc ? serializeCategory(doc) : null;
-}
-
 export async function categoryExists(name: string) {
   const db = getDb();
   const doc = await db.collection<CategoryDoc>(COLLECTIONS.categories).findOne({ name });

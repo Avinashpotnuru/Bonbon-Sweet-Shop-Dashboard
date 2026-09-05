@@ -68,7 +68,7 @@ export async function destroySession(): Promise<void> {
 export async function requireSession(): Promise<SessionPayload> {
   const session = await getSession();
   if (!session) {
-    redirect("/login");
+    redirect("/admin/login");
   }
   return session;
 }
@@ -84,24 +84,10 @@ export const DASHBOARD_ROLES: Role[] = ["admin", "manager", "staff"];
 export async function requireDashboardAccess(): Promise<SessionPayload> {
   const session = await getSession();
   if (!session) {
-    redirect("/login");
+    redirect("/admin/login");
   }
   if (!DASHBOARD_ROLES.includes(session.role)) {
     redirect("/account/profile");
-  }
-  return session;
-}
-
-/**
- * Guard for owner/staff-restricted pages. Redirects a signed-in user with an
- * unauthorized role back to the dashboard.
- */
-export async function requirePageRole(
-  allowed: Role[],
-): Promise<SessionPayload> {
-  const session = await requireSession();
-  if (!allowed.includes(session.role)) {
-    redirect("/dashboard");
   }
   return session;
 }
@@ -131,19 +117,6 @@ export async function requireApiAuth(): Promise<SessionPayload> {
     throw new Error("UNAUTHORIZED");
   }
   return session;
-}
-
-/**
- * Role guard for API handlers. Must be called after (or together with)
- * `requireApiAuth`. Throws 403 when the session role is not allowed.
- */
-export function requireApiRole(
-  session: SessionPayload,
-  allowed: Role[],
-): void {
-  if (!allowed.includes(session.role)) {
-    throw new Error("FORBIDDEN");
-  }
 }
 
 /**

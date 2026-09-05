@@ -4,10 +4,10 @@ import { LoginBrand, LoginForm } from "@/components/dashboard/login-form";
 import { getSession } from "@/lib/auth";
 
 export const metadata = {
-  title: "Sign in — Bonbon",
+  title: "Admin sign in — Bonbon",
 };
 
-export default async function LoginPage() {
+export default async function AdminLoginPage() {
   const session = await getSession();
 
   if (session) {

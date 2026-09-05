@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Heart,
   LogOut,
   MapPin,
   Package,
@@ -18,7 +17,6 @@ export const ACCOUNT_NAV = [
   { href: "/account/profile", label: "Profile", icon: User },
   { href: "/account/orders", label: "Orders", icon: Package },
   { href: "/account/addresses", label: "Saved addresses", icon: MapPin },
-  { href: "/account/wishlist", label: "Wishlist", icon: Heart },
   { href: "/account/settings", label: "Settings", icon: Settings },
 ] as const;
 

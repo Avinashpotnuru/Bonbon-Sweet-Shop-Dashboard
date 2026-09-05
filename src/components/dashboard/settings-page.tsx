@@ -152,7 +152,7 @@ export function SettingsPage({
       // ignore
     }
     toast.success("Signed out");
-    router.push("/login");
+    router.push("/admin/login");
     router.refresh();
   }
 

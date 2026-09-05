@@ -45,6 +45,4 @@ export const customerListSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(8),
 });
 
-export type CustomerCreateInput = z.infer<typeof customerCreateSchema>;
-export type CustomerUpdateInput = z.infer<typeof customerUpdateSchema>;
 export type CustomerListInput = z.infer<typeof customerListSchema>;

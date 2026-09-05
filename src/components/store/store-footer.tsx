@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Candy, LayoutDashboard, Mail, MapPin, Phone } from "lucide-react";
 
 import { NewsletterForm } from "@/components/store/newsletter-form";
+import { getSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -76,7 +77,9 @@ const SOCIAL_LINKS = [
  * warm saffron accents, four-column responsive layout, newsletter, social
  * links, contact info and semantic HTML throughout.
  */
-export function StoreFooter() {
+export async function StoreFooter() {
+  const session = await getSession();
+  const isCustomer = session?.role === "customer";
   return (
     <footer id="contact" className="store-footer-bg">
       {/* Saffron accent strip */}
@@ -259,17 +262,32 @@ export function StoreFooter() {
           </span>
 
           <span className="order-first -mt-1 flex items-center gap-1 sm:order-none sm:mt-0">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-[0.7rem] font-medium text-[oklch(0.72_0.03_60)] transition-colors hover:border-[oklch(0.72_0.15_75/0.5)] hover:text-[oklch(0.86_0.11_82)]"
-            >
-              <LayoutDashboard className="size-3" aria-hidden="true" />
-              Admin dashboard
-            </Link>
+            {isCustomer ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-[0.7rem] font-medium text-[oklch(0.72_0.03_60)]">
+                Dashboard is for staff &amp; admins only
+              </span>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-[0.7rem] font-medium text-[oklch(0.72_0.03_60)] transition-colors hover:border-[oklch(0.72_0.15_75/0.5)] hover:text-[oklch(0.86_0.11_82)]"
+              >
+                <LayoutDashboard className="size-3" aria-hidden="true" />
+                Admin dashboard
+              </Link>
+            )}
           </span>
 
           <span className="flex items-center gap-1">
-            Made with care, one batch at a time.
+            Crafted by{" "}
+            <a
+              href="https://avinashpotnuruportfolio.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[oklch(0.82_0.09_85)] underline-offset-2 hover:underline"
+            >
+              Avinash Potnru
+            </a>{" "}
+            — one batch at a time.
           </span>
         </div>
       </div>

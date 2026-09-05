@@ -16,7 +16,15 @@ const IP_MAX_ATTEMPTS = 20;
 const EMAIL_WINDOW_MS = 15 * 60 * 1000;
 const EMAIL_MAX_ATTEMPTS = 5;
 
-export async function POST(request: Request) {
+type LoginRoleRules = {
+  rejectRole: (role: string) => boolean;
+  rejectMessage: string;
+};
+
+export async function handleLoginRequest(
+  request: Request,
+  rules: LoginRoleRules,
+) {
   try {
     await connectDb();
 
@@ -48,6 +56,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Incorrect email or password." },
         { status: 401 },
+      );
+    }
+
+    if (rules.rejectRole(user.role)) {
+      return NextResponse.json(
+        { error: rules.rejectMessage },
+        { status: 403 },
       );
     }
 

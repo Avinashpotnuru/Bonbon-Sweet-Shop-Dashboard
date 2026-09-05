@@ -1,13 +1,13 @@
+import Image from "next/image";
 import { Sparkles, Star, BadgeCheck, Leaf } from "lucide-react";
 
 /**
  * Hero visual composition — the "premium product imagery" of the homepage.
  *
- * Products currently have no uploaded photography, so this art-directs the
- * existing ProductArt language (warm oklch gradients + monogram) into a
- * layered, high-end still-life: a large "hero plate" surrounded by floating
- * trust chips and soft decorative glows. No external images are hotlinked, so
- * it never breaks and needs no image-domain configuration.
+ * A layered, high-end still-life: a large "hero plate" backed by real
+ * confectionery photography, surrounded by floating trust chips and soft
+ * decorative glows. Imagery is served from /public so it never breaks and
+ * needs no image-domain configuration.
  *
  * Pure presentational Server Component. Motion is applied via scoped
  * `.hero-reveal` / `.hero-float` classes and respects prefers-reduced-motion.
@@ -33,10 +33,18 @@ export function HeroArt() {
 
       {/* Main hero plate */}
       <div className="hero-reveal d3 hero-art-card relative aspect-[4/5] w-full overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-[oklch(0.4_0.09_42)] via-[oklch(0.55_0.13_62)] to-[oklch(0.7_0.15_72)] shadow-card">
-        {/* Sheen */}
+        <Image
+          src="/images/hero-plate.jpg"
+          alt="The day's small batch of Bonbon sweets, made fresh"
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 30rem"
+          className="object-cover"
+        />
+        {/* Scrim so the text stays readable */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/20"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[oklch(0.28_0.08_45/0.5)] via-transparent to-[oklch(0.22_0.04_50/0.65)]"
         />
         {/* Concentric ring */}
         <div
@@ -57,7 +65,7 @@ export function HeroArt() {
           <span className="font-heading text-xl font-semibold tracking-tight text-white/95">
             Handcrafted daily
           </span>
-          <span className="max-w-[15ch] text-sm leading-relaxed text-white/80">
+          <span className="max-w-[15ch] text-sm leading-relaxed text-white/85">
             Small-batch sweets, made fresh in our kitchen
           </span>
         </div>

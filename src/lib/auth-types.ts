@@ -5,6 +5,7 @@ export type User = {
   email: string;
   passwordHash: string;
   name: string;
+  phone?: string;
   role: Role;
   createdAt: string;
 };
