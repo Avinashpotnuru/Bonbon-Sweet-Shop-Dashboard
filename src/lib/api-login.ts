@@ -59,6 +59,16 @@ export async function handleLoginRequest(
       );
     }
 
+if (user.status === "inactive") {
+      return NextResponse.json(
+        {
+          error:
+            "This account has been deactivated. Contact an administrator for help.",
+        },
+        { status: 403 },
+      );
+    }
+
     if (rules.rejectRole(user.role)) {
       return NextResponse.json(
         { error: rules.rejectMessage },

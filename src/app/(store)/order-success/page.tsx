@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -42,11 +42,6 @@ function formatDate(d: Date): string {
   }).format(d);
 }
 
-/** No-op subscription — the placed order is a one-shot snapshot, never updates. */
-function subscribeNone(): () => void {
-  return () => {};
-}
-
 /** Read the just-placed order from sessionStorage (client-only). */
 function readPlacedOrder(): PlacedOrder | null {
   if (typeof window === "undefined") return null;
@@ -59,7 +54,7 @@ function readPlacedOrder(): PlacedOrder | null {
 }
 
 export default function OrderSuccessPage() {
-  const order = useSyncExternalStore(subscribeNone, readPlacedOrder, readPlacedOrder);
+  const [order] = useState<PlacedOrder | null>(() => readPlacedOrder());
 
   const handleTrack = () => {
     toast("Tracking on the way", {

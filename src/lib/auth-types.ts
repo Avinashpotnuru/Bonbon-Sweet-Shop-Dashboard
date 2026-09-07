@@ -1,5 +1,9 @@
 export type Role = "admin" | "manager" | "staff" | "customer";
 
+export type UserStatus = "active" | "inactive";
+
+export type StaffRole = Extract<Role, "manager" | "staff">;
+
 export type User = {
   id: string;
   email: string;
@@ -7,7 +11,9 @@ export type User = {
   name: string;
   phone?: string;
   role: Role;
+  status: UserStatus;
   createdAt: string;
+  updatedAt?: string;
 };
 
 export type PublicUser = Omit<User, "passwordHash">;

@@ -15,21 +15,9 @@ export const metadata: Metadata = {
 };
 
 const BENEFITS = [
-  {
-    icon: History,
-    title: "Track your orders",
-    text: "Every order lands in your account with live status.",
-  },
-  {
-    icon: Package,
-    title: "Check out faster",
-    text: "Saved contact and delivery details, ready to go.",
-  },
-  {
-    icon: Clock,
-    title: "Your order history",
-    text: "Re-order last month's favourites in one tap.",
-  },
+  { icon: History, label: "Track orders" },
+  { icon: Package, label: "Faster checkout" },
+  { icon: Clock, label: "Order history" },
 ];
 
 /**
@@ -63,66 +51,39 @@ export default async function LoginPage({
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-44 -right-24 size-96 rounded-full bg-[oklch(0.85_0.09_85/0.16)] blur-3xl"
       />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-1/4 top-1/3 size-40 rounded-full bg-[oklch(0.65_0.16_72/0.08)] blur-3xl"
+      />
 
-      <div className="mx-auto grid w-full max-w-4xl gap-8 lg:grid-cols-[1fr_24rem] lg:items-center">
-        {/* Brand / benefits */}
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.72_0.15_75)] to-[oklch(0.62_0.13_70)] text-[oklch(0.25_0.06_50)] shadow-md shadow-primary/20">
-              <Candy className="size-6" aria-hidden="true" />
-            </div>
-            <span className="font-heading text-2xl font-bold tracking-tight">
-              Bonbon
-            </span>
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8">
+        {/* Brand + headline */}
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.72_0.15_75)] to-[oklch(0.62_0.13_70)] text-[oklch(0.25_0.06_50)] shadow-lg shadow-primary/20">
+            <Candy className="size-7" aria-hidden="true" />
           </div>
-
           <div className="flex flex-col gap-2">
-            <h1 className="store-display">
-              Welcome{" "}
-              <span className="italic text-[oklch(0.65_0.16_72/0.9)]">back</span>
-            </h1>
-            <p className="store-lead max-w-md">
-              Sign in to pick up right where you left off — your sweet tooth
-              will thank you.
+            <h1 className="store-display">Welcome back</h1>
+            <p className="store-lead">
+              Sign in to pick up right where you left off.
             </p>
           </div>
-
-          <ul className="flex flex-col gap-4">
-            {BENEFITS.map((benefit) => (
-              <li key={benefit.title} className="flex items-start gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.85_0.09_85/0.5)] text-[oklch(0.62_0.13_70)]">
-                  <benefit.icon className="size-5" aria-hidden="true" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <h2 className="text-sm font-semibold">{benefit.title}</h2>
-                  <p className="text-sm text-muted-foreground">{benefit.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
         </div>
 
         {/* Form card */}
-        <div className="flex flex-col gap-3 rounded-2xl border bg-card p-6 shadow-card sm:p-8">
-          <div className="flex flex-col gap-1">
+        <div className="w-full rounded-2xl border bg-card p-6 shadow-card sm:p-8">
+          <div className="mb-5 flex flex-col gap-1">
             <h2 className="font-heading text-xl font-bold tracking-tight">
-              Sign in to your account
+              Your account
             </h2>
             <p className="text-sm text-muted-foreground">
-              Continue to your Bonbon storefront account.
+              Track orders, save addresses and check out faster.
             </p>
           </div>
 
-          <div className="mt-2">
-            <AccountLoginForm nextPath={destination} />
-          </div>
+          <AccountLoginForm nextPath={destination} />
 
-          <p className="text-center text-xs text-muted-foreground">
-            By signing in you agree to keep your details safe — we only use
-            them to run your orders.
-          </p>
-
-          <div className="mt-2 border-t pt-4 text-center text-sm text-muted-foreground">
+          <div className="mt-5 border-t pt-4 text-center text-sm text-muted-foreground">
             New to Bonbon?{" "}
             <Link
               href="/register"
@@ -132,6 +93,27 @@ export default async function LoginPage({
             </Link>
           </div>
         </div>
+
+        {/* Benefits chips */}
+        <ul className="grid w-full grid-cols-3 gap-3">
+          {BENEFITS.map((benefit) => (
+            <li
+              key={benefit.label}
+              className="flex flex-col items-center gap-1.5 rounded-2xl border bg-card/60 px-3 py-3 text-center"
+            >
+              <benefit.icon
+                className="size-4 text-[oklch(0.62_0.13_70)]"
+                aria-hidden="true"
+              />
+              <span className="text-xs font-medium">{benefit.label}</span>
+            </li>
+          ))}
+        </ul>
+
+        <p className="text-center text-xs text-muted-foreground">
+          By signing in you agree to keep your details safe — we only use them
+          to run your orders.
+        </p>
       </div>
     </div>
   );

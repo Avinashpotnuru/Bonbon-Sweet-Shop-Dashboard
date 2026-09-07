@@ -7,7 +7,9 @@ import {
   Check,
   Clock,
   Landmark,
+  LockKeyhole,
   LogOut,
+  Minus,
   RotateCcw,
   ShieldCheck,
   Store,
@@ -16,7 +18,6 @@ import {
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,11 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -40,8 +37,10 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import type { Role } from "@/lib/auth-types";
+import type { Permission, Role } from "@/lib/auth-types";
+import { ROLE_PERMISSIONS } from "@/lib/auth-types";
 import { initials } from "@/lib/format";
+import { StaffSection } from "@/components/dashboard/staff-section";
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: "Admin",
@@ -49,6 +48,17 @@ const ROLE_LABELS: Record<Role, string> = {
   staff: "Staff",
   customer: "Customer",
 };
+
+const ROLE_SCOPES: { label: string; permissions: Permission[] }[] = [
+  { label: "Catalog", permissions: ["products.view"] },
+  { label: "Categories", permissions: ["categories.view"] },
+  { label: "Orders", permissions: ["orders.view"] },
+  { label: "Customers", permissions: ["customers.view"] },
+  { label: "Inventory", permissions: ["inventory.view"] },
+  { label: "Expenses", permissions: ["expenses.view"] },
+  { label: "Reports", permissions: ["reports.view"] },
+  { label: "Staff", permissions: ["users.manage"] },
+];
 
 const STORE_KEY = "bonbon-settings";
 
@@ -111,8 +121,7 @@ export function SettingsPage({
   });
 
   const [saved, setSaved] = useState(false);
-  const dirty =
-    JSON.stringify(settings) !== JSON.stringify(readInitial());
+  const dirty = JSON.stringify(settings) !== JSON.stringify(readInitial());
 
   function update(patch: Partial<SettingsState>) {
     setSettings((prev) => ({ ...prev, ...patch }));
@@ -178,7 +187,11 @@ export function SettingsPage({
             <RotateCcw className="size-4" aria-hidden="true" />
             Reset
           </Button>
-          <Button onClick={handleSave} disabled={!dirty && !saved} className="gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={!dirty && !saved}
+            className="gap-2"
+          >
             {saved ? (
               <>
                 <Check className="size-4" aria-hidden="true" />
@@ -195,52 +208,88 @@ export function SettingsPage({
         {/* Left rail */}
         <div className="flex flex-col gap-6">
           {/* Account hero */}
-          <Card className="overflow-hidden">
-            <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-br from-primary via-[oklch(0.55_0.14_55)] to-[oklch(0.55_0.17_330)] px-5 pb-10 pt-5">
+
+          <Card className="p-0">
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-[oklch(0.55_0.14_55)] to-[oklch(0.55_0.17_330)] px-5 py-6">
               <div
-                className="pointer-events-none absolute -right-6 -top-8 size-32 rounded-full bg-white/10 blur-2xl"
+                className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgb(255_255_255_/_0.14)_1px,transparent_1px)] [background-size:14px_14px]"
                 aria-hidden="true"
               />
               <div
-                className="pointer-events-none absolute -bottom-10 right-8 size-24 rounded-full bg-rose-200/20 blur-2xl"
+                className="pointer-events-none absolute -top-1/4 left-1/2 h-[200%] w-40 -translate-x-1/2 rotate-12 bg-white/5 blur-2xl"
                 aria-hidden="true"
               />
-              <div className="relative flex items-center gap-3">
-                <Avatar className="size-14 ring-2 ring-white/40">
-                  <AvatarFallback className="bg-white/20 text-lg font-semibold text-white">
+              <div
+                className="pointer-events-none absolute -right-10 -top-12 size-36 rounded-full bg-white/10 blur-2xl"
+                aria-hidden="true"
+              />
+              <div
+                className="pointer-events-none absolute -bottom-16 -left-8 size-32 rounded-full bg-rose-200/25 blur-2xl"
+                aria-hidden="true"
+              />
+              <div className="relative flex flex-col gap-4">
+                <Avatar className="size-16 shadow-lg shadow-primary-foreground/10 ring-[3px] ring-white/40">
+                  <AvatarFallback className="bg-white/20 text-xl font-semibold text-white">
                     {initials(name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex min-w-0 flex-col gap-1 text-white">
-                  <span className="truncate text-base font-semibold">
+                <div className="flex flex-col gap-1 text-white">
+                  <span className="truncate text-lg font-semibold leading-tight">
                     {name}
                   </span>
                   <span className="truncate text-sm text-white/80">
                     {email}
                   </span>
                 </div>
+                <div className="flex items-center border-t border-white/15 pt-4">
+                  <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/25 backdrop-blur-sm">
+                    <ShieldCheck
+                      className="size-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{ROLE_LABELS[role]}</span>
+                  </span>
+                </div>
               </div>
             </div>
-            <CardContent className="-mt-5">
-              <div className="flex items-center justify-between rounded-xl bg-card py-3 pl-4 pr-3 shadow-sm ring-1 ring-foreground/10">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Role
+          </Card>
+
+          {/* Permissions card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <LockKeyhole className="size-3.5" aria-hidden="true" />
+                </span>
+                Permissions
+              </CardTitle>
+              <CardDescription>
+                Store areas this account can access based on its role.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {ROLE_SCOPES.map((scope) => {
+                const granted = scope.permissions.some((permission) =>
+                  ROLE_PERMISSIONS[role].includes(permission),
+                );
+                return (
+                  <span
+                    key={scope.label}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                      granted
+                        ? "bg-primary/10 text-primary ring-1 ring-primary/20"
+                        : "bg-muted text-muted-foreground/70"
+                    }`}
+                  >
+                    {granted ? (
+                      <Check className="size-3" aria-hidden="true" />
+                    ) : (
+                      <Minus className="size-3" aria-hidden="true" />
+                    )}
+                    {scope.label}
                   </span>
-                  <span className="text-sm font-semibold capitalize">
-                    {ROLE_LABELS[role]}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <ShieldCheck
-                    className="size-4 text-primary"
-                    aria-hidden="true"
-                  />
-                  <Badge variant="secondary" className="gap-1">
-                    {ROLE_LABELS[role]}
-                  </Badge>
-                </div>
-              </div>
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -305,7 +354,10 @@ export function SettingsPage({
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field>
                   <FieldLabel className="flex items-center gap-1.5">
-                    <Landmark className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                    <Landmark
+                      className="size-3.5 text-muted-foreground"
+                      aria-hidden="true"
+                    />
                     Currency
                   </FieldLabel>
                   <FieldContent>
@@ -329,7 +381,10 @@ export function SettingsPage({
 
                 <Field>
                   <FieldLabel className="flex items-center gap-1.5">
-                    <Clock className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                    <Clock
+                      className="size-3.5 text-muted-foreground"
+                      aria-hidden="true"
+                    />
                     Timezone
                   </FieldLabel>
                   <FieldContent>
@@ -397,6 +452,8 @@ export function SettingsPage({
               />
             </CardContent>
           </Card>
+
+          <StaffSection />
         </div>
       </div>
     </div>
