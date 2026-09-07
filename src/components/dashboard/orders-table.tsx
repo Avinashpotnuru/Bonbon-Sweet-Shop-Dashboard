@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronUp,
   MoreHorizontal,
@@ -13,6 +14,7 @@ import {
   ShoppingBag,
   Trash2,
   TriangleAlert,
+  XOctagon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -127,6 +129,9 @@ export function OrdersTable() {
   const [orderToDelete, setOrderToDelete] = useState<Order | undefined>(undefined);
   const [deleting, setDeleting] = useState(false);
 
+  const [orderToCancel, setOrderToCancel] = useState<Order | undefined>(undefined);
+  const [cancelling, setCancelling] = useState(false);
+
   useEffect(() => {
     const controller = new AbortController();
     const params = new URLSearchParams({
@@ -231,6 +236,35 @@ export function OrdersTable() {
         });
       })
       .finally(() => setDeleting(false));
+  }
+
+  function confirmCancel() {
+    if (!orderToCancel) return;
+    setCancelling(true);
+
+    fetch(`/api/orders/${orderToCancel.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "Cancelled" }),
+    })
+      .then((r) => {
+        if (!r.ok) return r.json().then((d) => { throw new Error(d.error || "Cancel failed"); });
+        return r.json();
+      })
+      .then(() => {
+        const num = orderToCancel.orderNumber;
+        setOrderToCancel(undefined);
+        setRefreshKey((k) => k + 1);
+        toast.success("Order cancelled", {
+          description: `Order ${num} has been cancelled. Stock has been restored.`,
+        });
+      })
+      .catch((err) => {
+        toast.error("Cancel failed", {
+          description: err?.message || "Please try again.",
+        });
+      })
+      .finally(() => setCancelling(false));
   }
 
   function openAdd() {
@@ -444,6 +478,15 @@ export function OrdersTable() {
                           <Pencil className="size-4" aria-hidden="true" />
                           Edit order
                         </DropdownMenuItem>
+                        {order.status !== "Cancelled" && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setOrderToCancel(order)}>
+                              <XOctagon className="size-4" aria-hidden="true" />
+                              Cancel order
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           variant="destructive"
@@ -526,6 +569,33 @@ export function OrdersTable() {
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={confirmDelete} disabled={deleting}>
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!orderToCancel}
+        onOpenChange={(open) => {
+          if (!open && !cancelling) setOrderToCancel(undefined);
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-amber-500/10 text-amber-600">
+              <AlertTriangle className="size-5" aria-hidden="true" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Cancel order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark{" "}
+              <span className="font-medium text-foreground">{orderToCancel?.orderNumber}</span>{" "}
+              as Cancelled and restore its items to inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel} disabled={cancelling}>
+              Yes, cancel order
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

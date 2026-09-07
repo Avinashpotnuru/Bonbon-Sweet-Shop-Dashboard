@@ -44,6 +44,8 @@ export type Permission =
   | "expenses.view"
   | "expenses.manage"
   | "reports.view"
+  | "coupons.view"
+  | "coupons.manage"
   | "users.manage";
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -69,6 +71,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "expenses.view",
     "expenses.manage",
     "reports.view",
+    "coupons.view",
+    "coupons.manage",
     "users.manage",
   ],
   manager: [
@@ -93,6 +97,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "expenses.view",
     "expenses.manage",
     "reports.view",
+    "coupons.view",
+    "coupons.manage",
   ],
   staff: [
     "products.view",

@@ -15,6 +15,11 @@ export type OrderDoc = {
   updatedAt: Date;
 };
 
+type OrderWithItems = OrderDoc & {
+  customerUserId?: string;
+  items?: Array<{ productId: string; quantity: number }>;
+};
+
 export type SerializableOrder = {
   id: string;
   orderNumber: string;
@@ -55,6 +60,21 @@ async function nextOrderNumber(): Promise<string> {
   const match = /(\d+)$/.exec(last.orderNumber);
   const num = match ? parseInt(match[1], 10) + 1 : 1002;
   return `SO-${num}`;
+}
+
+/** Restores product stock for the line items of a cancelled/deleted order. */
+async function restoreStock(items: OrderWithItems["items"]): Promise<void> {
+  if (!items?.length) return;
+  const db = getDb();
+  for (const item of items) {
+    if (!ObjectId.isValid(item.productId)) continue;
+    const quantity = Math.max(0, Math.floor(Number(item.quantity)));
+    if (!quantity) continue;
+    await db.collection(COLLECTIONS.products).updateOne(
+      { _id: new ObjectId(item.productId) },
+      { $inc: { stock: quantity }, $set: { updatedAt: new Date() } },
+    );
+  }
 }
 
 export async function listOrders(input: OrderListInput) {
@@ -127,6 +147,12 @@ export async function updateOrder(id: string, data: Record<string, unknown>) {
   const db = getDb();
   if (!ObjectId.isValid(id)) return null;
 
+  const oid = new ObjectId(id);
+  const existing = await db
+    .collection<OrderWithItems>(COLLECTIONS.orders)
+    .findOne({ _id: oid });
+  if (!existing) return null;
+
   const update: Partial<OrderDoc> = { updatedAt: new Date() };
   if (data.customerName !== undefined) update.customerName = data.customerName as string;
   if (data.itemCount !== undefined) update.itemCount = data.itemCount as number;
@@ -134,10 +160,15 @@ export async function updateOrder(id: string, data: Record<string, unknown>) {
   if (data.status !== undefined) update.status = data.status as OrderDoc["status"];
   if (data.placedAt !== undefined) update.placedAt = new Date(data.placedAt as string);
 
+  // Cancelling returns the ordered stock to inventory (only the first time).
+  if (update.status === "Cancelled" && existing.status !== "Cancelled") {
+    await restoreStock(existing.items);
+  }
+
   const result = await db
     .collection<OrderDoc>(COLLECTIONS.orders)
     .findOneAndUpdate(
-      { _id: new ObjectId(id) },
+      { _id: oid },
       { $set: update },
       { returnDocument: "after" },
     );
@@ -147,8 +178,18 @@ export async function updateOrder(id: string, data: Record<string, unknown>) {
 export async function deleteOrder(id: string) {
   const db = getDb();
   if (!ObjectId.isValid(id)) return false;
+
+  const oid = new ObjectId(id);
+  const existing = await db
+    .collection<OrderWithItems>(COLLECTIONS.orders)
+    .findOne({ _id: oid });
+  if (!existing) return false;
+
+  // Deleting also returns the ordered stock to inventory.
+  await restoreStock(existing.items);
+
   const result = await db
     .collection<OrderDoc>(COLLECTIONS.orders)
-    .deleteOne({ _id: new ObjectId(id) });
+    .deleteOne({ _id: oid });
   return result.deletedCount === 1;
 }

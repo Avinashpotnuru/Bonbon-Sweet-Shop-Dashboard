@@ -14,11 +14,12 @@ import {
 
 import {
   computeTotals,
-  normalizeCoupon,
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_CHARGE,
   type CartTotals,
+  type CouponPricing,
 } from "@/lib/cart-pricing";
+import { validateCoupon } from "@/components/store/coupon-actions";
 
 export type CartLine = {
   productId: string;
@@ -32,6 +33,7 @@ export type CartLine = {
 export type CartState = {
   items: CartLine[];
   promoCode: string | null;
+  coupon: CouponPricing | null;
 };
 
 export { FREE_SHIPPING_THRESHOLD, DELIVERY_CHARGE };
@@ -41,14 +43,18 @@ type Action =
   | { type: "REMOVE"; productId: string }
   | { type: "SET_QTY"; productId: string; quantity: number }
   | { type: "CLEAR" }
-  | { type: "APPLY_PROMO"; code: string | null }
+  | {
+      type: "APPLY_PROMO";
+      code: string | null;
+      coupon: CouponPricing | null;
+    }
   | { type: "HYDRATE"; cart: CartState };
 
 const STORAGE_KEY = "bonbon-cart-v1";
 
 // Server + first client render both start empty, so hydration can never
 // mismatch. The persisted cart is restored right after mount via HYDRATE.
-const EMPTY_CART: CartState = { items: [], promoCode: null };
+const EMPTY_CART: CartState = { items: [], promoCode: null, coupon: null };
 
 function cartReducer(state: CartState, action: Action): CartState {
   switch (action.type) {
@@ -82,9 +88,9 @@ function cartReducer(state: CartState, action: Action): CartState {
           .filter((i) => i.quantity > 0),
       };
     case "CLEAR":
-      return { items: [], promoCode: null };
+      return { items: [], promoCode: null, coupon: null };
     case "APPLY_PROMO":
-      return { ...state, promoCode: action.code };
+      return { ...state, promoCode: action.code, coupon: action.coupon };
     case "HYDRATE":
       return action.cart;
     default:
@@ -93,15 +99,25 @@ function cartReducer(state: CartState, action: Action): CartState {
 }
 
 function loadCart(): CartState {
-  if (typeof window === "undefined") return { items: [], promoCode: null };
+  if (typeof window === "undefined") return { items: [], promoCode: null, coupon: null };
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { items: [], promoCode: null };
-    const parsed = JSON.parse(raw) as CartState;
-    if (!Array.isArray(parsed.items)) return { items: [], promoCode: null };
-    return { items: parsed.items, promoCode: parsed.promoCode ?? null };
+    if (!raw) return { items: [], promoCode: null, coupon: null };
+    const parsed = JSON.parse(raw) as Partial<CartState>;
+    if (!Array.isArray(parsed.items)) return { items: [], promoCode: null, coupon: null };
+    const coupon =
+      parsed.coupon &&
+      typeof parsed.coupon.label === "string" &&
+      typeof parsed.coupon.percent === "number"
+        ? { label: parsed.coupon.label, percent: parsed.coupon.percent }
+        : null;
+    return {
+      items: parsed.items,
+      promoCode: parsed.promoCode ?? null,
+      coupon,
+    };
   } catch {
-    return { items: [], promoCode: null };
+    return { items: [], promoCode: null, coupon: null };
   }
 }
 
@@ -116,7 +132,7 @@ type CartContextValue = {
   removeItem: (productId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  applyPromo: (code: string) => { ok: boolean; message: string };
+  applyPromo: (code: string) => Promise<{ ok: boolean; message: string }>;
   removePromo: () => void;
 };
 
@@ -150,6 +166,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
+  // Re-validate a restored promo code against the DB so a coupon that has since
+  // expired or reached its use limit never keeps showing a stale discount.
+  useEffect(() => {
+    if (!state.promoCode) return;
+    let cancelled = false;
+    validateCoupon(state.promoCode).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        dispatch({
+          type: "APPLY_PROMO",
+          code: result.code,
+          coupon: { label: result.label, percent: result.percent },
+        });
+      } else {
+        dispatch({ type: "APPLY_PROMO", code: null, coupon: null });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.promoCode]);
+
   const addItem = useCallback(
     (line: Omit<CartLine, "quantity">, quantity = 1) => {
       dispatch({ type: "ADD", line: { ...line, quantity } });
@@ -168,24 +206,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => dispatch({ type: "CLEAR" }), []);
 
   const applyPromo = useCallback(
-    (code: string): { ok: boolean; message: string } => {
+    async (code: string): Promise<{ ok: boolean; message: string }> => {
       const normalized = code.trim().toUpperCase();
       if (!normalized) return { ok: false, message: "Enter a promo code." };
-      if (normalizeCoupon(normalized) !== normalized) {
-        return { ok: false, message: "That promo code isn't valid." };
-      }
-      dispatch({ type: "APPLY_PROMO", code: normalized });
+      const result = await validateCoupon(normalized);
+      if (!result.ok) return { ok: false, message: result.message };
+      dispatch({
+        type: "APPLY_PROMO",
+        code: result.code,
+        coupon: { label: result.label, percent: result.percent },
+      });
       return { ok: true, message: "Promo applied — nice savings!" };
     },
     [],
   );
 
   const removePromo = useCallback(() => {
-    dispatch({ type: "APPLY_PROMO", code: null });
+    dispatch({ type: "APPLY_PROMO", code: null, coupon: null });
   }, []);
 
   const value = useMemo<CartContextValue>(() => {
-    const totals = computeTotals(state.items, state.promoCode);
+    const totals = computeTotals(state.items, state.coupon);
 
     return {
       items: state.items,

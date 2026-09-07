@@ -121,4 +121,5 @@ export const COLLECTIONS = {
   inventoryMovements: "inventory_movements",
   users: "users",
   customerProfiles: "customer_profiles",
+  coupons: "coupons",
 } as const;

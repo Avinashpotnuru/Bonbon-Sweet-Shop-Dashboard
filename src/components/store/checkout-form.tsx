@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductArt } from "@/components/store/product-art";
+import { CouponCards } from "@/components/store/coupon-cards";
 import { checkoutSchema, PAYMENT_METHODS, type CheckoutInput } from "@/lib/checkout-schemas";
 import { createRazorpayCheckout, placeOrder } from "@/components/store/checkout-actions";
 import { useCart } from "@/components/store/cart-context";
@@ -87,7 +88,7 @@ export function CheckoutForm({
   razorpay?: RazorpayPublicConfig | null;
 }) {
   const router = useRouter();
-  const { items, totals, appliedPromo, clearCart } = useCart();
+  const { items, totals, appliedPromo, applyPromo, clearCart } = useCart();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -386,6 +387,10 @@ export function CheckoutForm({
       {/* ── Order summary column ── */}
       <aside className="h-fit rounded-2xl border bg-card p-6 shadow-card">
         <h2 className="mb-4 font-heading text-lg font-bold">Order summary</h2>
+
+        <div className="mb-5">
+          <CouponCards appliedCode={appliedPromo} onApply={applyPromo} compact />
+        </div>
 
         <div className="mb-4 max-h-72 space-y-3 overflow-y-auto pr-1">
           {items.map((item) => (

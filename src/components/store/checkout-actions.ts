@@ -7,12 +7,14 @@ import { getDb, COLLECTIONS } from "@/lib/mongodb";
 import { checkoutSchema } from "@/lib/checkout-schemas";
 import {
   computeTotals,
-  normalizeCoupon,
   type CartPricingLine,
+  type CouponPricing,
 } from "@/lib/cart-pricing";
 import { ORDER_STATUSES } from "@/lib/order-schemas";
 import type { PlacedOrder } from "@/lib/placed-order";
 import { getSession } from "@/lib/auth";
+import { getActiveCouponByCode, bumpCouponUsage } from "@/lib/coupon-repo";
+import { sendOrderConfirmationEmail } from "@/lib/notifications";
 import {
   createRazorpayOrder,
   isRazorpayConfigured,
@@ -151,8 +153,24 @@ async function resolveCheckout(input: unknown): Promise<ResolveResult> {
     lineItems.push({ ...product, productId: line.productId, quantity: line.quantity });
   }
 
-  const coupon = normalizeCoupon(data.promoCode || null);
-  const totals = computeTotals(pricing, coupon);
+  let coupon: string | null = null;
+  let couponPricing: CouponPricing | null = null;
+  if (data.promoCode?.trim()) {
+    const couponDoc = await getActiveCouponByCode(data.promoCode);
+    if (!couponDoc) {
+      return {
+        ok: false,
+        result: {
+          ok: false,
+          code: "INVALID_COUPON",
+          error: "That promo code is invalid or has expired.",
+        },
+      };
+    }
+    coupon = couponDoc.code;
+    couponPricing = { label: couponDoc.label, percent: couponDoc.percent / 100 };
+  }
+  const totals = computeTotals(pricing, couponPricing);
 
   return { ok: true, session, data, totals, coupon, lineItems };
 }
@@ -254,6 +272,11 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
 
   await db.collection(COLLECTIONS.orders).insertOne(orderDoc);
 
+  if (coupon) {
+    // Track coupon usage (past the point of no return — the order is saved).
+    await bumpCouponUsage(coupon).catch(() => {});
+  }
+
   const placedOrder: PlacedOrder = {
     orderNumber,
     customerName: data.customerName,
@@ -277,6 +300,12 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
       total: totals.total,
     },
   };
+
+  // Fire-and-forget confirmation email — must never block or fail the order.
+  void sendOrderConfirmationEmail({
+    to: data.email,
+    order: placedOrder,
+  }).catch(() => {});
 
   return { ok: true, order: placedOrder };
 }

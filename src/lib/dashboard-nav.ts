@@ -5,6 +5,7 @@ import {
   Package,
   Settings,
   ShoppingCart,
+  Tag,
   Tags,
   Users,
   Wallet,
@@ -29,5 +30,6 @@ export const navItems: NavItem[] = [
   { title: "Inventory", href: "/dashboard/inventory", icon: Boxes },
   { title: "Expenses", href: "/dashboard/expenses", icon: Wallet, permissions: ["expenses.view"] },
   { title: "Reports", href: "/dashboard/reports", icon: BarChart3, permissions: ["reports.view"] },
+  { title: "Coupons", href: "/dashboard/coupons", icon: Tag, permissions: ["coupons.view"] },
   { title: "Settings", href: "/dashboard/settings", icon: Settings, permissions: ["users.manage"] },
 ];

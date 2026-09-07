@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ProductArt } from "@/components/store/product-art";
+import { CouponCards } from "@/components/store/coupon-cards";
 import { useCart } from "@/components/store/cart-context";
 import { formatMoneyExact } from "@/lib/format";
 
@@ -45,8 +46,8 @@ export default function CartPage() {
 
   const [promoInput, setPromoInput] = useState("");
 
-  const handleApplyPromo = () => {
-    const result = applyPromo(promoInput);
+  const handleApplyPromo = async () => {
+    const result = await applyPromo(promoInput);
     if (result.ok) {
       setPromoInput("");
       toast.success(result.message);
@@ -186,7 +187,7 @@ export default function CartPage() {
             <h2 className="mb-4 font-heading text-lg font-bold">Order summary</h2>
 
             {/* Promo code */}
-            <div className="mb-5">
+            <div className="mb-5 flex flex-col gap-3">
               {appliedPromo ? (
                 <div className="flex items-center justify-between rounded-xl bg-secondary/70 px-3 py-2.5">
                   <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary-foreground">
@@ -218,9 +219,9 @@ export default function CartPage() {
                           handleApplyPromo();
                         }
                       }}
-                      placeholder="Promo code"
+                      placeholder="Enter coupon code"
                       className="h-9 pl-9"
-                      aria-label="Promo code"
+                      aria-label="Coupon code"
                     />
                   </div>
                   <Button
@@ -233,6 +234,8 @@ export default function CartPage() {
                   </Button>
                 </div>
               )}
+
+              <CouponCards appliedCode={appliedPromo} onApply={applyPromo} />
             </div>
 
             <Separator className="mb-4" />

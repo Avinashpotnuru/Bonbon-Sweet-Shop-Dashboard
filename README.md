@@ -13,6 +13,7 @@ A full-stack sweet-shop platform for a candy & bakery business: a customer-facin
 - **Cart** — add/remove/update quantities, promo-code discount, delivery fee, totals
 - **Checkout** — validated contact + delivery details, payment methods: **Cash on Delivery**, **Razorpay** (cards / UPI / netbanking), **PayPal**
   - Razorpay uses a server-created order at the checkout.razorpay.com modal; the impact on inventory/post-payment verification is signature-verified before the order is stored
+  - Promotion codes are validated server-side from the database (active, not expired, not over its use limit) before any order is accepted
 - **Order success** — session-persisted receipt after placement
 - **Customer accounts** — profile, saved addresses, and order history (JWT protected)
 
@@ -21,8 +22,9 @@ A full-stack sweet-shop platform for a candy & bakery business: a customer-facin
 - **Overview** — premium live dashboard with hero banner, animated KPI cards, revenue trend chart, sales-by-status donut, top customers, expenses-by-category, recent orders, and low-stock alerts
 - **Products** — CRUD for candies & baked goods
 - **Categories** — organize products (with in-use delete protection)
-- **Orders** — auto-numbered `SO-####` (shared with storefront), full CRUD, search/filter/sort/pagination
+- **Orders** — auto-numbered `SO-####` (shared with storefront), full CRUD, search/filter/sort/pagination; cancelling or deleting an order restores its items to inventory
 - **Customers** — CRUD with normalized email (duplicate detection) and status/VIP filters
+- **Coupons** — create, edit, and delete promo codes with %-off, expiry dates, and usage limits (manager/admin)
 - **Inventory** — stock view + atomic adjustments (clamps at 0, auto status, movement history); storefront orders decrement stock automatically
 - **Expenses** — tracking with category breakdown & total-spend aggregation
 - **Reports** — revenue trends, profit, top customers, low-stock alerts, expenses by category
@@ -62,6 +64,10 @@ AUTH_SECRET="replace-with-a-long-random-secret"
 RAZORPAY_KEY_ID=rzp_test_xxxx
 RAZORPAY_KEY_SECRET=xxxx
 RAZORPAY_CURRENCY=INR   # optional, defaults to INR
+
+# Resend — optional. Without a key, order-confirmation emails are skipped.
+RESEND_API_KEY=re_xxxx
+RESEND_FROM="Bonbon <orders@yourdomain.com>"
 ```
 
 > `.env.local` is gitignored — never commit your real credentials.
@@ -106,15 +112,15 @@ Seed credentials:
 
 `src/lib/mongodb.ts` (`getClient`, `getDb`, `connectDb`) manages the shared connection and exposes the following collections:
 
-`products`, `categories`, `customers`, `orders`, `expenses`, `inventory_movements`, `users`, `customer_profiles`
+`products`, `categories`, `customers`, `orders`, `expenses`, `inventory_movements`, `users`, `customer_profiles`, `coupons`
 
 ### API Routes
 
 All endpoints are under `/api`:
 
 - **Auth** — `POST /api/auth/login-customer`, `POST /api/auth/login-staff`, `POST /api/auth/logout`, `POST /api/auth/register-customer`
-- `GET/POST /api/products`, `/api/categories`, `/api/customers`, `/api/orders`, `/api/expenses`
-- `PATCH/DELETE /api/products/[id]`, `/api/categories/[id]`, `/api/customers/[id]`, `/api/orders/[id]`, `/api/expenses/[id]`
+- `GET/POST /api/products`, `/api/categories`, `/api/customers`, `/api/orders`, `/api/expenses`, `/api/coupons` (coupons need dashboard auth)
+- `PATCH/DELETE /api/products/[id]`, `/api/categories/[id]`, `/api/customers/[id]`, `/api/orders/[id]`, `/api/expenses/[id]`, `/api/coupons/[id]`
 - `GET /api/inventory` (optional `?movements=true`), `POST /api/inventory/[id]/adjust`
 - `GET /api/reports`
 - **Staff (admin-only)** — `GET/POST /api/staff`, `PATCH/DELETE /api/staff/[id]`
@@ -127,6 +133,7 @@ All endpoints are under `/api`:
 - **Forms**: react-hook-form + zod
 - **Auth**: jose (JWT in httpOnly cookies), scrypt password hashing
 - **Payments**: Razorpay (server-side order creation + signature verification)
+- **Email**: Resend (order confirmation)
 - **Notifications**: sonner; **Theming**: next-themes
 
 ## 📁 Project Structure
@@ -150,6 +157,7 @@ src/
     *-types.ts    # TypeScript types
     auth.ts       # JWT signing / session helpers
     razorpay.ts   # Razorpay order creation & signature verification
+    notifications.ts # Email notifications (Resend)
 scripts/          # Standalone DB seed, index, and verify scripts
 ```
 
