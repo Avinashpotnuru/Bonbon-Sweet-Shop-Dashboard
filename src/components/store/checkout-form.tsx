@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   Banknote,
+  IndianRupee,
   Lock,
   ShieldCheck,
   Truck,
@@ -26,12 +27,65 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductArt } from "@/components/store/product-art";
 import { checkoutSchema, PAYMENT_METHODS, type CheckoutInput } from "@/lib/checkout-schemas";
-import { placeOrder } from "@/components/store/checkout-actions";
+import { createRazorpayCheckout, placeOrder } from "@/components/store/checkout-actions";
 import { useCart } from "@/components/store/cart-context";
-import { ORDER_STORAGE_KEY } from "@/lib/placed-order";
+import { ORDER_STORAGE_KEY, type PlacedOrder } from "@/lib/placed-order";
+import type { RazorpayPublicConfig } from "@/lib/razorpay";
 import { formatMoneyExact } from "@/lib/format";
 
-export function CheckoutForm() {
+type CheckoutPayload = CheckoutInput & {
+  promoCode: string;
+  items: Array<{ productId: string; quantity: number }>;
+};
+
+type RazorpayPaymentResponse = {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: { name?: string; email?: string; contact?: string };
+  modal?: { ondismiss?: () => void };
+  handler: (response: RazorpayPaymentResponse) => void;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions) => { open: () => void };
+  }
+}
+
+let razorpayScriptPromise: Promise<void> | null = null;
+
+function loadRazorpayScript(): Promise<void> {
+  if (typeof window === "undefined" || "Razorpay" in window) {
+    return Promise.resolve();
+  }
+  razorpayScriptPromise ??= new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      razorpayScriptPromise = null;
+      reject(new Error("Failed to load the Razorpay checkout script."));
+    };
+  });
+  return razorpayScriptPromise;
+}
+
+export function CheckoutForm({
+  razorpay,
+}: {
+  razorpay?: RazorpayPublicConfig | null;
+}) {
   const router = useRouter();
   const { items, totals, appliedPromo, clearCart } = useCart();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -39,6 +93,7 @@ export function CheckoutForm() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
@@ -56,6 +111,65 @@ export function CheckoutForm() {
     },
   });
 
+  const paymentMethod = useWatch({ control, name: "paymentMethod" });
+
+  function finishOrder(order: PlacedOrder) {
+    clearCart();
+    sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(order));
+    router.replace("/order-success");
+  }
+
+  function handleFailure(
+    result: { ok: false; error: string; code?: string },
+  ) {
+    if (result.code === "LOGIN_REQUIRED") {
+      router.replace("/login?next=/checkout");
+      return;
+    }
+    setServerError(result.error);
+  }
+
+  function openRazorpay(
+    payment: { id: string; amount: number; currency: string },
+    checkoutInput: CheckoutPayload,
+  ) {
+    if (!razorpay) return;
+    setServerError(null);
+
+    const instance = new window.Razorpay!({
+      key: razorpay.keyId,
+      amount: payment.amount,
+      currency: payment.currency,
+      name: "Bonbon",
+      description: "Sweet Shop order",
+      order_id: payment.id,
+      prefill: {
+        name: checkoutInput.customerName,
+        email: checkoutInput.email,
+        contact: checkoutInput.phone,
+      },
+      modal: {
+        ondismiss: () => setServerError(null),
+      },
+      handler: async (response) => {
+        const result = await placeOrder({
+          ...checkoutInput,
+          razorpay: {
+            orderId: payment.id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          },
+        });
+        if (!result.ok) {
+          handleFailure(result);
+          return;
+        }
+        finishOrder(result.order);
+      },
+    });
+    instance.open();
+  }
+
   async function onSubmit(values: CheckoutInput) {
     setServerError(null);
     const itemsPayload = items.map((i) => ({
@@ -68,22 +182,36 @@ export function CheckoutForm() {
       return;
     }
 
-    const result = await placeOrder({
+    const checkoutInput: CheckoutPayload = {
       ...values,
       promoCode: appliedPromo ?? "",
       items: itemsPayload,
-    });
-    if (!result.ok) {
-      if (result.code === "LOGIN_REQUIRED") {
-        router.replace("/login?next=/checkout");
+    };
+
+    if (values.paymentMethod !== "Razorpay") {
+      const result = await placeOrder(checkoutInput);
+      if (!result.ok) {
+        handleFailure(result);
         return;
       }
-      setServerError(result.error);
+      finishOrder(result.order);
       return;
     }
-    clearCart();
-    sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(result.order));
-    router.replace("/order-success");
+
+    const setup = await createRazorpayCheckout(checkoutInput);
+    if (!setup.ok) {
+      handleFailure(setup);
+      return;
+    }
+
+    try {
+      await loadRazorpayScript();
+    } catch {
+      setServerError("We couldn't load the payment provider. Please try again.");
+      return;
+    }
+
+    openRazorpay(setup.razorpay, checkoutInput);
   }
 
   if (items.length === 0) {
@@ -225,7 +353,9 @@ export function CheckoutForm() {
         <section className="rounded-2xl border bg-card p-6 shadow-card">
           <h2 className="mb-5 font-heading text-lg font-bold">Payment method</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            {PAYMENT_METHODS.map((method) => (
+            {PAYMENT_METHODS.filter(
+              (method) => method !== "Razorpay" || Boolean(razorpay?.configured),
+            ).map((method) => (
               <label
                 key={method}
                 className="flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors has-[:checked]:border-[oklch(0.62_0.13_70)] has-[:checked]:bg-[oklch(0.72_0.15_75/0.08)]"
@@ -239,6 +369,8 @@ export function CheckoutForm() {
                 <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   {method === "PayPal" ? (
                     <Wallet className="size-4" aria-hidden="true" />
+                  ) : method === "Razorpay" ? (
+                    <IndianRupee className="size-4" aria-hidden="true" />
                   ) : (
                     <Banknote className="size-4" aria-hidden="true" />
                   )}
@@ -340,7 +472,11 @@ export function CheckoutForm() {
           disabled={isSubmitting}
         >
           <Lock className="mr-2 size-4" aria-hidden="true" />
-          {isSubmitting ? "Placing order…" : "Place order"}
+          {isSubmitting
+            ? "Processing…"
+            : paymentMethod === "Razorpay"
+              ? "Pay with Razorpay"
+              : "Place order"}
         </Button>
 
         <Button asChild variant="ghost" size="sm" className="mt-2 w-full text-muted-foreground">

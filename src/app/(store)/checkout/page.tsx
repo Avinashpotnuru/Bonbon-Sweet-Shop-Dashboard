@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { requireCustomerSession } from "@/lib/customer-auth";
+import { getRazorpayCheckoutConfig } from "@/lib/razorpay";
 
 export const metadata: Metadata = {
   title: "Checkout — Bonbon",
@@ -29,7 +30,7 @@ export default async function CheckoutPage() {
         </p>
       </div>
 
-      <CheckoutForm />
+      <CheckoutForm razorpay={getRazorpayCheckoutConfig()} />
     </div>
   );
 }

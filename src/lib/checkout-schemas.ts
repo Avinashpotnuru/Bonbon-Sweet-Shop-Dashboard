@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PAYMENT_METHODS = ["Cash on Delivery", "PayPal"] as const;
+export const PAYMENT_METHODS = ["Cash on Delivery", "Razorpay", "PayPal"] as const;
 
 export const checkoutSchema = z.object({
   customerName: z

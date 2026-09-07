@@ -13,6 +13,11 @@ import {
 import { ORDER_STATUSES } from "@/lib/order-schemas";
 import type { PlacedOrder } from "@/lib/placed-order";
 import { getSession } from "@/lib/auth";
+import {
+  createRazorpayOrder,
+  isRazorpayConfigured,
+  verifyRazorpaySignature,
+} from "@/lib/razorpay";
 
 /** Each cart line the client sends. Prices are ignored — re-derived from DB. */
 const checkoutLineSchema = z.object({
@@ -23,29 +28,63 @@ const checkoutLineSchema = z.object({
 const placeOrderSchema = checkoutSchema.extend({
   promoCode: z.string().trim().max(32).optional().or(z.literal("")),
   items: z.array(checkoutLineSchema).min(1, "Your cart is empty."),
+  razorpay: z
+    .object({
+      orderId: z.string().min(1),
+      paymentId: z.string().min(1),
+      signature: z.string().min(1),
+    })
+    .optional(),
 });
+
+type CheckoutData = z.infer<typeof placeOrderSchema>;
+
+type LineItem = {
+  productId: string;
+  name: string;
+  price: number;
+  category: string;
+  quantity: number;
+};
 
 export type PlaceOrderResult =
   | { ok: true; order: PlacedOrder }
   | { ok: false; error: string; code?: string };
 
+export type RazorpayCheckoutResult =
+  | { ok: true; razorpay: { id: string; amount: number; currency: string } }
+  | { ok: false; error: string; code?: string };
+
+type CheckoutFailure = { ok: false; error: string; code?: string };
+
+type ResolveResult =
+  | {
+      ok: true;
+      session: { userId: string };
+      data: CheckoutData;
+      totals: ReturnType<typeof computeTotals>;
+      coupon: string | null;
+      lineItems: LineItem[];
+    }
+  | { ok: false; result: CheckoutFailure };
+
 /**
- * Places a customer order. Runs entirely server-side:
- *  1. validates the payload
- *  2. re-reads authoritative product prices from the DB
- *  3. recomputes subtotal / discount / delivery / total (never trusts the client)
- *  4. atomically decrements stock (guards against overselling)
- *  5. persists a full order record
+ * Validates the payload, then re-reads authoritative product prices from the
+ * DB and recomputes subtotal / discount / delivery / total — the client's
+ * numbers are never trusted. Shared by `placeOrder` and `createRazorpayCheckout`.
  */
-export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
+async function resolveCheckout(input: unknown): Promise<ResolveResult> {
   // Every order must come from a signed-in storefront customer. This guard
   // cannot be bypassed by calling the server action directly.
   const session = await getSession();
   if (!session || session.role !== "customer") {
     return {
       ok: false,
-      code: "LOGIN_REQUIRED",
-      error: "Please sign in to your account before placing an order.",
+      result: {
+        ok: false,
+        code: "LOGIN_REQUIRED",
+        error: "Please sign in to your account before placing an order.",
+      },
     };
   }
 
@@ -53,8 +92,11 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   if (!parsed.success) {
     return {
       ok: false,
-      code: "VALIDATION",
-      error: parsed.error.issues[0]?.message ?? "Please check your details.",
+      result: {
+        ok: false,
+        code: "VALIDATION",
+        error: parsed.error.issues[0]?.message ?? "Please check your details.",
+      },
     };
   }
 
@@ -91,21 +133,18 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   }
 
   const pricing: CartPricingLine[] = [];
-  const lineItems: Array<{
-    productId: string;
-    name: string;
-    price: number;
-    category: string;
-    quantity: number;
-  }> = [];
+  const lineItems: LineItem[] = [];
 
   for (const line of data.items) {
     const product = byId.get(line.productId);
     if (!product) {
       return {
         ok: false,
-        code: "UNAVAILABLE",
-        error: "One of the items in your cart is no longer available.",
+        result: {
+          ok: false,
+          code: "UNAVAILABLE",
+          error: "One of the items in your cart is no longer available.",
+        },
       };
     }
     pricing.push({ price: product.price, quantity: line.quantity });
@@ -114,6 +153,51 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
 
   const coupon = normalizeCoupon(data.promoCode || null);
   const totals = computeTotals(pricing, coupon);
+
+  return { ok: true, session, data, totals, coupon, lineItems };
+}
+
+/**
+ * Places a customer order. Runs entirely server-side:
+ *  1. validates the payload
+ *  2. re-reads authoritative product prices from the DB
+ *  3. recomputes subtotal / discount / delivery / total (never trusts the client)
+ *  4. for Razorpay payments, verifies the payment signature first
+ *  5. atomically decrements stock (guards against overselling)
+ *  6. persists a full order record
+ */
+export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
+  const resolved = await resolveCheckout(input);
+  if (!resolved.ok) return resolved.result;
+
+  const { session, data, totals, coupon, lineItems } = resolved;
+
+  if (data.paymentMethod === "Razorpay") {
+    if (!isRazorpayConfigured()) {
+      return {
+        ok: false,
+        code: "PAYMENT_UNAVAILABLE",
+        error: "Card payments are currently unavailable. Please choose Cash on Delivery instead.",
+      };
+    }
+    if (!data.razorpay) {
+      return {
+        ok: false,
+        code: "PAYMENT_REQUIRED",
+        error: "Please complete the payment before placing your order.",
+      };
+    }
+    const verified = await verifyRazorpaySignature(data.razorpay);
+    if (!verified) {
+      return {
+        ok: false,
+        code: "PAYMENT_VERIFICATION",
+        error: "We couldn't verify your payment. Please contact our support team.",
+      };
+    }
+  }
+
+  const db = getDb();
 
   // Update stock atomically, rejecting any item that would go negative.
   for (const line of lineItems) {
@@ -157,6 +241,7 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
     },
     notes: data.notes || "",
     paymentMethod: data.paymentMethod,
+    razorpayPaymentId: data.razorpay?.paymentId || null,
     coupon: coupon,
     amounts: {
       subtotal: totals.subtotal,
@@ -194,6 +279,54 @@ export async function placeOrder(input: unknown): Promise<PlaceOrderResult> {
   };
 
   return { ok: true, order: placedOrder };
+}
+
+/**
+ * Prepares a Razorpay checkout for the customer's cart without placing the
+ * order. Server-side totals in the smallest currency unit (paise/cents) are
+ * sent to Razorpay; the order is only persisted after `placeOrder` verifies
+ * the payment signature.
+ */
+export async function createRazorpayCheckout(
+  input: unknown,
+): Promise<RazorpayCheckoutResult> {
+  const resolved = await resolveCheckout(input);
+  if (!resolved.ok) return resolved.result;
+
+  const { data, totals } = resolved;
+
+  if (data.paymentMethod !== "Razorpay") {
+    return {
+      ok: false,
+      code: "PAYMENT_METHOD",
+      error: "Please select a payment method.",
+    };
+  }
+  if (!isRazorpayConfigured()) {
+    return {
+      ok: false,
+      code: "PAYMENT_UNAVAILABLE",
+      error: "Card payments are currently unavailable. Please choose Cash on Delivery instead.",
+    };
+  }
+
+  try {
+    const payment = await createRazorpayOrder({
+      amount: Math.round(totals.total * 100),
+      receipt: `so_${Date.now()}`,
+      notes: { email: data.email, name: data.customerName },
+    });
+    return { ok: true, razorpay: payment };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "";
+    return {
+      ok: false,
+      code: "PAYMENT_SETUP",
+      error: detail
+        ? `We couldn't set up your payment — ${detail}`
+        : "We couldn't set up your payment. Please try again.",
+    };
+  }
 }
 
 async function nextOrderNumber(): Promise<string> {
