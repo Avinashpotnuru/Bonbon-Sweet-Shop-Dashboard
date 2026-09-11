@@ -10,21 +10,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ProductArt } from "@/components/store/product-art";
+import { CartItemThumb } from "@/components/store/cart-item-thumb";
 import { useCart, FREE_SHIPPING_THRESHOLD } from "@/components/store/cart-context";
 import { formatMoneyExact } from "@/lib/format";
-
-function CartThumb({ name, image }: { name: string; image?: string }) {
-  if (image) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={image} alt="" className="size-16 rounded-lg object-cover" />
-    );
-  }
-  return (
-    <ProductArt name={name} className="size-16 rounded-lg" />
-  );
-}
 
 /**
  * Quick-view cart drawer opened from the header icon. Shows line items with
@@ -73,7 +61,7 @@ export function CartDrawer() {
             <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
               {items.map((item) => (
                 <div key={item.productId} className="flex gap-3 rounded-xl border p-3">
-                  <CartThumb name={item.name} image={item.image} />
+                  <CartItemThumb name={item.name} image={item.image} className="size-16 rounded-lg" />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">

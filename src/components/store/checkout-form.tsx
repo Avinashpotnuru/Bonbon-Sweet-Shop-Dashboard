@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ProductArt } from "@/components/store/product-art";
+import { CartItemThumb } from "@/components/store/cart-item-thumb";
 import { CouponCards } from "@/components/store/coupon-cards";
 import { checkoutSchema, PAYMENT_METHODS, type CheckoutInput } from "@/lib/checkout-schemas";
 import { createRazorpayCheckout, placeOrder } from "@/components/store/checkout-actions";
@@ -395,16 +395,7 @@ export function CheckoutForm({
         <div className="mb-4 max-h-72 space-y-3 overflow-y-auto pr-1">
           {items.map((item) => (
             <div key={item.productId} className="flex items-center gap-3">
-              {item.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.image}
-                  alt=""
-                  className="size-12 rounded-lg object-cover"
-                />
-              ) : (
-                <ProductArt name={item.name} className="size-12 rounded-lg" />
-              )}
+              <CartItemThumb name={item.name} image={item.image} className="size-12 rounded-lg" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{item.name}</p>
                 <p className="text-xs text-muted-foreground">

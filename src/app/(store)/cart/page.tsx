@@ -18,18 +18,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ProductArt } from "@/components/store/product-art";
+import { CartItemThumb } from "@/components/store/cart-item-thumb";
 import { CouponCards } from "@/components/store/coupon-cards";
 import { useCart } from "@/components/store/cart-context";
 import { formatMoneyExact } from "@/lib/format";
-
-function CartThumb({ name, image }: { name: string; image?: string }) {
-  if (image) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={image} alt="" className="size-20 rounded-xl object-cover" />;
-  }
-  return <ProductArt name={name} className="size-20 rounded-xl" />;
-}
 
 export default function CartPage() {
   const router = useRouter();
@@ -108,7 +100,7 @@ export default function CartPage() {
                 className="group flex gap-4 rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-card-hover"
               >
                 <div className="shrink-0">
-                  <CartThumb name={item.name} image={item.image} />
+                  <CartItemThumb name={item.name} image={item.image} className="size-20 rounded-xl" />
                 </div>
 
                 <div className="flex min-w-0 flex-1 flex-col gap-2">

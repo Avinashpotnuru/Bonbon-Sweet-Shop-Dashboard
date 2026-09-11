@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  ChevronDown,
-  ChevronUp,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -56,6 +54,8 @@ import {
 import type { Expense, ExpenseCategory } from "@/lib/expenses-types";
 import { ExpenseForm, type ExpenseFormValues } from "@/components/dashboard/expense-form";
 import { formatDate, formatMoneyExact } from "@/lib/format";
+import { SortButton } from "@/components/dashboard/sort-button";
+import { TablePagination } from "@/components/dashboard/table-pagination";
 
 type SortField = "description" | "category" | "amount" | "date";
 type SortDirection = "asc" | "desc";
@@ -77,36 +77,6 @@ function categoryVariant(category: ExpenseCategory) {
     default:
       return "outline" as const; // Marketing, Other
   }
-}
-
-function SortButton({
-  field,
-  label,
-  currentSort,
-  onSort,
-}: {
-  field: SortField;
-  label: string;
-  currentSort: { field: SortField; direction: SortDirection };
-  onSort: (field: SortField) => void;
-}) {
-  const active = currentSort.field === field;
-  return (
-    <button
-      onClick={() => onSort(field)}
-      className="inline-flex items-center gap-1 text-left font-medium hover:text-foreground transition-colors"
-      aria-label={`Sort by ${label}${active ? ` (currently ${currentSort.direction === "asc" ? "ascending" : "descending"})` : ""}`}
-    >
-      {label}
-      {active ? (
-        currentSort.direction === "asc" ? (
-          <ChevronUp className="size-3.5" aria-hidden="true" />
-        ) : (
-          <ChevronDown className="size-3.5" aria-hidden="true" />
-        )
-      ) : null}
-    </button>
-  );
 }
 
 export function ExpensesTable() {
@@ -160,7 +130,6 @@ export function ExpensesTable() {
     return () => controller.abort();
   }, [search, categoryFilter, sort, page, refreshKey]);
 
-  const safePage = Math.min(page, totalPages);
   const hasActiveFilters = search.trim() !== "" || categoryFilter !== "all";
 
   function handleSort(field: SortField) {
@@ -470,32 +439,13 @@ export function ExpensesTable() {
           </Table>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            {total} expense{total !== 1 ? "s" : ""} found
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Previous
-            </Button>
-            <span className="tabular-nums">
-              Page {safePage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <TablePagination
+          count={total}
+          unit="expense"
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </div>
     );
   }
